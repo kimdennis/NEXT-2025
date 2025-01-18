@@ -8,6 +8,7 @@
 #include "Level.h"
 #include "GameObjectFactory.h"
 #include "GameEventManager.h"
+#include "Wall.h"
 
 using namespace std;
 
@@ -54,23 +55,18 @@ void RenderGameComplete();
 void ResetGame();
 
 void CreateCourse() {
-    // Hole 1: Simple straight shot
+    // Hole 1: Simple straight shot with walls
     auto level1 = std::make_unique<Level>(3);
     level1->SetBall(GameObjectFactory::CreateBall(100.0f, 300.0f));
     level1->SetHole(GameObjectFactory::CreateHole(700.0f, 300.0f, 3));
+    
+    // Add some walls
+    level1->AddObject(std::make_unique<Wall>(400.0f, 200.0f, 200.0f, 20.0f));  // Horizontal wall
+    level1->AddObject(std::make_unique<Wall>(500.0f, 400.0f, 20.0f, 150.0f));  // Vertical wall
+    
     levels.push_back(std::move(level1));
     
-    // Hole 2: Diagonal with multiple obstacles
-    auto level2 = std::make_unique<Level>(4);
-    level2->SetBall(GameObjectFactory::CreateBall(100.0f, 500.0f));
-    level2->SetHole(GameObjectFactory::CreateHole(700.0f, 100.0f, 4));
-    levels.push_back(std::move(level2));
-    
-    // Hole 3: Maze-like
-    auto level3 = std::make_unique<Level>(5);
-    level3->SetBall(GameObjectFactory::CreateBall(100.0f, 100.0f));
-    level3->SetHole(GameObjectFactory::CreateHole(700.0f, 500.0f, 5));
-    levels.push_back(std::move(level3));
+    // Add more levels with different wall configurations...
 }
 
 void Init() {

@@ -8,13 +8,22 @@ void Level::Update(float deltaTime) {
     if (m_ball) {
         m_ball->Update(deltaTime);
         
+        // Check wall collisions
+        for (const auto& obj : m_objects) {
+            if (auto wall = dynamic_cast<Wall*>(obj.get())) {
+                if (wall->CheckCollision(*m_ball)) {
+                    m_ball->HandleWallCollision(*wall);
+                }
+            }
+        }
+        
         // Check if ball is in hole
-        if (m_hole && m_ball->IsMoving()) {  // Only check when ball is moving
+        if (m_hole && m_ball->IsMoving()) {
             float ballX, ballY;
             m_ball->GetPosition(ballX, ballY);
             if (m_hole->IsInHole(ballX, ballY)) {
-                m_ball->Stop();  // Stop the ball first
-                GameEventManager::GetInstance().Emit(GameEventManager::EventType::HoleIn);  // Then emit event
+                m_ball->Stop();
+                GameEventManager::GetInstance().Emit(GameEventManager::EventType::HoleIn);
             }
         }
     }

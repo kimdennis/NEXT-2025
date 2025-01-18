@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "ball.h"
+#include "Wall.h"
 #include <cmath>
 
 Ball::Ball(float x, float y) : 
@@ -203,6 +204,43 @@ void Ball::HandleBoundaryCollisions() {
     if (m_posY > SCREEN_HEIGHT - m_radius) {
         m_posY = SCREEN_HEIGHT - m_radius;
         m_velocityY = -fabs(m_velocityY) * BOUNCE_DAMPENING;
+        m_isMoving = true;
+    }
+}
+
+void Ball::HandleWallCollision(const Wall& wall) {
+    float wallX, wallY;
+    wall.GetPosition(wallX, wallY);
+    float wallWidth = wall.GetWidth();
+    float wallHeight = wall.GetHeight();
+    
+    // Calculate wall boundaries
+    float wallLeft = wallX - wallWidth/2;
+    float wallRight = wallX + wallWidth/2;
+    float wallTop = wallY - wallHeight/2;
+    float wallBottom = wallY + wallHeight/2;
+    
+    const float BOUNCE_DAMPENING = 0.95f;
+    
+    // Determine which side was hit and bounce accordingly
+    if (m_posX < wallLeft) {
+        m_posX = wallLeft - m_radius;
+        m_velocityX = -fabs(m_velocityX) * BOUNCE_DAMPENING;
+        m_isMoving = true;
+    }
+    if (m_posX > wallRight) {
+        m_posX = wallRight + m_radius;
+        m_velocityX = fabs(m_velocityX) * BOUNCE_DAMPENING;
+        m_isMoving = true;
+    }
+    if (m_posY < wallTop) {
+        m_posY = wallTop - m_radius;
+        m_velocityY = -fabs(m_velocityY) * BOUNCE_DAMPENING;
+        m_isMoving = true;
+    }
+    if (m_posY > wallBottom) {
+        m_posY = wallBottom + m_radius;
+        m_velocityY = fabs(m_velocityY) * BOUNCE_DAMPENING;
         m_isMoving = true;
     }
 }

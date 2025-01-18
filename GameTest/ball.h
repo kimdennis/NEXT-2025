@@ -1,6 +1,7 @@
 #pragma once
 #include "GameObject.h"
 #include "App/app.h"
+#include "Wall.h"
 #include <vector>
 
 // Add screen constants
@@ -50,6 +51,7 @@ public:
     
     void HandleCollision(Ball& other);
     void HandleBoundaryCollisions();
+    void HandleWallCollision(const Wall& wall);
     
     // Add these declarations
     void GetPosition(float& x, float& y) const override;
