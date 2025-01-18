@@ -1,5 +1,6 @@
 #pragma once
 #include "GameObject.h"
+#include "App/app.h"
 
 struct Vector2 {
     float x, y;
@@ -15,16 +16,7 @@ public:
         : GameObject(x, y), m_width(width), m_height(height) {}
     
     void Update(float deltaTime) override {}
-    void Draw() override {
-        App::DrawLine(m_posX - m_width/2, m_posY - m_height/2, 
-                     m_posX + m_width/2, m_posY - m_height/2, 0.0f, 1.0f, 0.0f);
-        App::DrawLine(m_posX + m_width/2, m_posY - m_height/2,
-                     m_posX + m_width/2, m_posY + m_height/2, 0.0f, 1.0f, 0.0f);
-        App::DrawLine(m_posX + m_width/2, m_posY + m_height/2,
-                     m_posX - m_width/2, m_posY + m_height/2, 0.0f, 1.0f, 0.0f);
-        App::DrawLine(m_posX - m_width/2, m_posY + m_height/2,
-                     m_posX - m_width/2, m_posY - m_height/2, 0.0f, 1.0f, 0.0f);
-    }
+    void Draw() override;
     bool CheckCollision(const GameObject& other) override;
     
     float GetWidth() const { return m_width; }
