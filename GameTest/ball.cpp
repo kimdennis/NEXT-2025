@@ -3,8 +3,7 @@
 #include <cmath>
 
 Ball::Ball(float x, float y) : 
-    m_posX(x),
-    m_posY(y),
+    GameObject(x, y),
     m_prevPosX(x),
     m_prevPosY(y),
     m_velocityX(0.0f),
@@ -17,6 +16,8 @@ Ball::Ball(float x, float y) :
     m_mass(45.0f),
     m_accumulator(0.0f)
 {
+    m_width = m_radius * 2;
+    m_height = m_radius * 2;
 }
 
 void Ball::Update(float deltaTime) {
@@ -45,39 +46,34 @@ void Ball::Update(float deltaTime) {
         m_posX += m_velocityX * FIXED_TIMESTEP;
         m_posY += m_velocityY * FIXED_TIMESTEP;
 
-        const float BOUNCE_DAMPENING = 0.95f;
-        const float SPEED_THRESHOLD = 3.0f;
-        
-        if (m_posX < m_radius) {
-            m_posX = m_radius;
-            m_velocityX = fabs(m_velocityX) * BOUNCE_DAMPENING;
-            m_isMoving = true;
-        }
-        if (m_posX > 800.0f - m_radius) {
-            m_posX = 800.0f - m_radius;
-            m_velocityX = -fabs(m_velocityX) * BOUNCE_DAMPENING;
-            m_isMoving = true;
-        }
-        if (m_posY < m_radius) {
-            m_posY = m_radius;
-            m_velocityY = fabs(m_velocityY) * BOUNCE_DAMPENING;
-            m_isMoving = true;
-        }
-        if (m_posY > 600.0f - m_radius) {
-            m_posY = 600.0f - m_radius;
-            m_velocityY = -fabs(m_velocityY) * BOUNCE_DAMPENING;
-            m_isMoving = true;
-        }
+        HandleBoundaryCollisions();
 
         float speedSquared = m_velocityX * m_velocityX + m_velocityY * m_velocityY;
         if (speedSquared < 0.01f) {
-            m_velocityX = 0.0f;
-            m_velocityY = 0.0f;
             Stop();
         }
 
         m_accumulator -= FIXED_TIMESTEP;
     }
+}
+
+void Ball::Draw() {
+    float alpha = m_accumulator / (1.0f / 240.0f);
+    float renderX = m_prevPosX + (m_posX - m_prevPosX) * alpha;
+    float renderY = m_prevPosY + (m_posY - m_prevPosY) * alpha;
+    
+    DrawCircle(renderX, renderY, m_radius, 1.0f, 1.0f, 1.0f, 1.0f);
+}
+
+bool Ball::CheckCollision(const GameObject& other) {
+    float otherX, otherY;
+    other.GetPosition(otherX, otherY);
+    
+    float dx = m_posX - otherX;
+    float dy = m_posY - otherY;
+    float distanceSquared = dx * dx + dy * dy;
+    
+    return distanceSquared < (m_radius * m_radius);
 }
 
 void Ball::ApplyForce(float power, float angle) {
@@ -136,25 +132,6 @@ void Ball::HandleCollision(Ball& other) {
     }
 }
 
-void Ball::Draw() {
-    float alpha = m_accumulator / (1.0f / 240.0f);
-    float renderX, renderY;
-    GetInterpolatedPosition(alpha, renderX, renderY);
-    
-    const int SEGMENTS = 32;
-    for (int i = 0; i < SEGMENTS; i++) {
-        float angle1 = (float)i / SEGMENTS * 2.0f * 3.14159f;
-        float angle2 = (float)(i + 1) / SEGMENTS * 2.0f * 3.14159f;
-        
-        float x1 = renderX + cos(angle1) * m_radius;
-        float y1 = renderY + sin(angle1) * m_radius;
-        float x2 = renderX + cos(angle2) * m_radius;
-        float y2 = renderY + sin(angle2) * m_radius;
-        
-        App::DrawLine(x1, y1, x2, y2, 1.0f, 1.0f, 1.0f);
-    }
-}
-
 void Ball::DrawCircle(float x, float y, float radius, float r, float g, float b, float a) {
     const int NUM_SEGMENTS = 30;
     for (int i = 0; i < NUM_SEGMENTS; i++) {
@@ -203,4 +180,29 @@ bool Ball::IsPointInside(float px, float py) {
 void Ball::GetInterpolatedPosition(float alpha, float& x, float& y) const {
     x = m_prevPosX + (m_posX - m_prevPosX) * alpha;
     y = m_prevPosY + (m_posY - m_prevPosY) * alpha;
+}
+
+void Ball::HandleBoundaryCollisions() {
+    const float BOUNCE_DAMPENING = 0.95f;
+    
+    if (m_posX < m_radius) {
+        m_posX = m_radius;
+        m_velocityX = fabs(m_velocityX) * BOUNCE_DAMPENING;
+        m_isMoving = true;
+    }
+    if (m_posX > SCREEN_WIDTH - m_radius) {
+        m_posX = SCREEN_WIDTH - m_radius;
+        m_velocityX = -fabs(m_velocityX) * BOUNCE_DAMPENING;
+        m_isMoving = true;
+    }
+    if (m_posY < m_radius) {
+        m_posY = m_radius;
+        m_velocityY = fabs(m_velocityY) * BOUNCE_DAMPENING;
+        m_isMoving = true;
+    }
+    if (m_posY > SCREEN_HEIGHT - m_radius) {
+        m_posY = SCREEN_HEIGHT - m_radius;
+        m_velocityY = -fabs(m_velocityY) * BOUNCE_DAMPENING;
+        m_isMoving = true;
+    }
 }

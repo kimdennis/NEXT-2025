@@ -1,11 +1,14 @@
 #pragma once
+#include "GameObject.h"
 #include "App/app.h"
 #include <vector>
 
-class Ball {
+// Add screen constants
+extern const float SCREEN_WIDTH;
+extern const float SCREEN_HEIGHT;
+
+class Ball : public GameObject {
 private:
-    float m_posX;
-    float m_posY;
     float m_prevPosX;
     float m_prevPosY;
     float m_velocityX;
@@ -18,19 +21,22 @@ private:
     bool m_isMoving;
     float m_accumulator;
 
+    static void DrawCircle(float x, float y, float radius, float r, float g, float b, float a);
+
 public:
     Ball(float x, float y);
-    ~Ball() {}
+    ~Ball() override = default;
     
-    void Update(float deltaTime);
-    void Draw();
+    // GameObject interface implementation
+    void Update(float deltaTime) override;
+    void Draw() override;
+    bool CheckCollision(const GameObject& other) override;
+    
+    // Ball-specific methods
     void ApplyForce(float power, float angle);
     void SetVelocity(float vx, float vy);
     void Stop();
     
-    // Position methods
-    void GetPosition(float& x, float& y) const;
-    void SetPosition(float x, float y);
     void GetInterpolatedPosition(float alpha, float& x, float& y) const;
     
     // Velocity getters
@@ -43,7 +49,9 @@ public:
     float GetRadius() const { return m_radius; }
     
     void HandleCollision(Ball& other);
-
-protected:
-    void DrawCircle(float x, float y, float radius, float r, float g, float b, float a);
+    void HandleBoundaryCollisions();
+    
+    // Add these declarations
+    void GetPosition(float& x, float& y) const override;
+    void SetPosition(float x, float y) override;
 };

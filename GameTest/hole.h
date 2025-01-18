@@ -1,4 +1,6 @@
 #pragma once
+#include "stdafx.h"
+#include "GameObject.h"
 #include <vector>
 #include "App/app.h"
 
@@ -11,7 +13,7 @@ struct Obstacle {
     float width, height;
 };
 
-class Hole {
+class Hole : public GameObject {
 private:
     float m_startX, m_startY;      // Starting position
     float m_holeX, m_holeY;        // Hole/target position
@@ -20,8 +22,14 @@ private:
 
 public:
     Hole(float startX, float startY, float holeX, float holeY, int par);
+    ~Hole() override = default;
     
-    void Draw();
+    // GameObject interface implementation
+    void Update(float deltaTime) override;
+    void Draw() override;
+    bool CheckCollision(const GameObject& other) override;
+    
+    // Hole-specific methods
     bool IsInHole(float x, float y) const;
     void AddObstacle(float x, float y, float width, float height);
     bool CheckCollision(float x, float y) const;

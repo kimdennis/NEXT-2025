@@ -187,7 +187,11 @@
     <ClInclude Include="App\SimpleSound.h" />
     <ClInclude Include="App\SimpleSprite.h" />
     <ClInclude Include="ball.h" />
+    <ClInclude Include="GameEventManager.h" />
+    <ClInclude Include="GameObject.h" />
+    <ClInclude Include="GameObjectFactory.h" />
     <ClInclude Include="hole.h" />
+    <ClInclude Include="Level.h" />
     <ClInclude Include="miniaudio\miniaudio.h" />
     <ClInclude Include="stb_image\stb_image.h" />
     <ClInclude Include="stdafx.h" />
@@ -200,8 +204,12 @@
     <ClCompile Include="App\SimpleSound.cpp" />
     <ClCompile Include="App\SimpleSprite.cpp" />
     <ClCompile Include="ball.cpp" />
+    <ClCompile Include="GameEventManager.cpp" />
+    <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="GameObjectFactory.cpp" />
     <ClCompile Include="GameTest.cpp" />
     <ClCompile Include="hole.cpp" />
+    <ClCompile Include="Level.cpp" />
     <ClCompile Include="miniaudio\miniaudio.cpp" />
     <ClCompile Include="stb_image\stb_image.cpp" />
     <ClCompile Include="stdafx.cpp">
