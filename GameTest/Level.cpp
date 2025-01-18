@@ -10,40 +10,14 @@ void Level::Update(float deltaTime) {
     if (m_ball) {
         m_ball->Update(deltaTime);
         
-        // Check collisions
-        for (const auto& obj : m_objects) {
-            if (auto wall = dynamic_cast<Wall*>(obj.get())) {
-                if (wall->CheckCollision(*m_ball)) {
-                    m_ball->HandleWallCollision(*wall);
-                }
-            }
-            else if (auto enemy = dynamic_cast<Enemy*>(obj.get())) {
-                if (enemy->CheckCollision(*m_ball)) {
-                    enemy->Kill();
-                    float ballX, ballY, enemyX, enemyY;
-                    m_ball->GetPosition(ballX, ballY);
-                    enemy->GetPosition(enemyX, enemyY);
-                    float dx = ballX - enemyX;
-                    float dy = ballY - enemyY;
-                    float length = sqrt(dx * dx + dy * dy);
-                    if (length > 0) {
-                        dx /= length;
-                        dy /= length;
-                        m_ball->SetVelocity(dx * 10.0f, dy * 10.0f);
-                    }
-                }
-            }
-            else if (auto collectible = dynamic_cast<Collectible*>(obj.get())) {
-                if (!collectible->IsCollected()) {
-                    float ballX, ballY, collectX, collectY;
-                    m_ball->GetPosition(ballX, ballY);
-                    collectible->GetPosition(collectX, collectY);
-                    float dx = ballX - collectX;
-                    float dy = ballY - collectY;
-                    if (sqrt(dx*dx + dy*dy) < m_ball->GetRadius() + 8.0f) {
-                        collectible->Collect();
-                    }
-                }
+        // Check collisions with all objects
+        for (auto& obj : m_objects) {
+            if (obj) {
+                // First check if ball collides with object
+                m_ball->CheckCollision(*obj);
+                
+                // Then check if object collides with ball (for special behaviors)
+                obj->CheckCollision(*m_ball);
             }
         }
         

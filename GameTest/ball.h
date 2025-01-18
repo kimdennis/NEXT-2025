@@ -2,6 +2,7 @@
 #include "GameObject.h"
 #include "App/app.h"
 #include "Wall.h"
+#include "Enemy.h"
 #include <vector>
 
 // Add screen constants
@@ -10,6 +11,8 @@ extern const float SCREEN_HEIGHT;
 
 class Ball : public GameObject {
 private:
+    static constexpr float BOUNCE_DAMPENING = 0.8f;
+    
     float m_prevPosX;
     float m_prevPosY;
     float m_velocityX;

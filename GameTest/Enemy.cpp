@@ -3,7 +3,7 @@
 #include "Ball.h"
 
 bool Enemy::CheckCollision(const GameObject& other) {
-    if (!m_isAlive) return false;
+    if (!m_isAlive || m_isExploding) return false;
     
     const Ball* ball = dynamic_cast<const Ball*>(&other);
     if (!ball) return false;
@@ -18,5 +18,10 @@ bool Enemy::CheckCollision(const GameObject& other) {
     float distanceSquared = dx * dx + dy * dy;
     float minDistance = radius + m_size;
     
-    return distanceSquared < minDistance * minDistance;
+    if (distanceSquared < minDistance * minDistance) {
+        Kill();  // Start explosion when hit
+        return true;
+    }
+    
+    return false;
 }

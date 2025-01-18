@@ -1,6 +1,10 @@
 #pragma once
 #include "GameObject.h"
 
+struct Vector2 {
+    float x, y;
+};
+
 class Wall : public GameObject {
 private:
     float m_width;
@@ -25,4 +29,5 @@ public:
     
     float GetWidth() const { return m_width; }
     float GetHeight() const { return m_height; }
+    Vector2 GetPosition() const { return Vector2{m_posX, m_posY}; }
 };

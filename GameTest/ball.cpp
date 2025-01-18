@@ -2,6 +2,7 @@
 #include "ball.h"
 #include "Wall.h"
 #include <cmath>
+#include <limits>
 
 Ball::Ball(float x, float y) : 
     GameObject(x, y),
@@ -24,7 +25,7 @@ Ball::Ball(float x, float y) :
 void Ball::Update(float deltaTime) {
     if (!m_isMoving) return;
 
-    const float FIXED_TIMESTEP = 1.0f / 240.0f;
+    const float FIXED_TIMESTEP = 1.0f / 60.0f;
     const float MAX_VELOCITY = 25.0f;
     
     m_accumulator += deltaTime;
@@ -32,14 +33,16 @@ void Ball::Update(float deltaTime) {
     while (m_accumulator >= FIXED_TIMESTEP) {
         m_prevPosX = m_posX;
         m_prevPosY = m_posY;
-
+        
+        // Apply velocity caps
         float speed = sqrt(m_velocityX * m_velocityX + m_velocityY * m_velocityY);
         if (speed > MAX_VELOCITY) {
             float scale = MAX_VELOCITY / speed;
             m_velocityX *= scale;
             m_velocityY *= scale;
         }
-
+        
+        // Apply friction
         if (speed > 0.0f) {
             float frictionMagnitude = m_friction * speed * speed * 0.05f;
             float frictionX = -(m_velocityX / speed) * frictionMagnitude;
@@ -48,19 +51,24 @@ void Ball::Update(float deltaTime) {
             m_accelerationX = frictionX;
             m_accelerationY = frictionY;
         }
-
+        
+        // Update velocity and position
         m_velocityX += m_accelerationX * FIXED_TIMESTEP;
         m_velocityY += m_accelerationY * FIXED_TIMESTEP;
+        
+        // Update position
         m_posX += m_velocityX * FIXED_TIMESTEP;
         m_posY += m_velocityY * FIXED_TIMESTEP;
-
+        
+        // Handle screen boundary collisions
         HandleBoundaryCollisions();
-
+        
+        // Check for stopping condition
         float speedSquared = m_velocityX * m_velocityX + m_velocityY * m_velocityY;
         if (speedSquared < 0.01f) {
             Stop();
         }
-
+        
         m_accumulator -= FIXED_TIMESTEP;
     }
 }
@@ -74,14 +82,48 @@ void Ball::Draw() {
 }
 
 bool Ball::CheckCollision(const GameObject& other) {
-    float otherX, otherY;
-    other.GetPosition(otherX, otherY);
+    // Check for wall collision
+    if (const Wall* wall = dynamic_cast<const Wall*>(&other)) {
+        HandleWallCollision(*wall);
+        return true;
+    }
     
-    float dx = m_posX - otherX;
-    float dy = m_posY - otherY;
-    float distanceSquared = dx * dx + dy * dy;
+    // Check for enemy collision
+    if (Enemy* enemy = const_cast<Enemy*>(dynamic_cast<const Enemy*>(&other))) {  // Note: const_cast to allow Kill()
+        if (enemy->IsAlive() && !enemy->IsExploding()) {
+            float enemyX, enemyY;
+            enemy->GetPosition(enemyX, enemyY);
+            
+            float dx = m_posX - enemyX;
+            float dy = m_posY - enemyY;
+            float distanceSquared = dx * dx + dy * dy;
+            float minDistance = m_radius + enemy->GetSize();
+            
+            if (distanceSquared < minDistance * minDistance) {
+                // Kill the enemy
+                enemy->Kill();
+                
+                // Normalize direction vector
+                float distance = sqrt(distanceSquared);
+                float nx = dx / distance;
+                float ny = dy / distance;
+                
+                // Set new velocity in the direction away from enemy
+                const float BOUNCE_SPEED = 15.0f;
+                m_velocityX = nx * BOUNCE_SPEED;
+                m_velocityY = ny * BOUNCE_SPEED;
+                
+                // Move ball out of collision
+                m_posX = enemyX + nx * minDistance;
+                m_posY = enemyY + ny * minDistance;
+                
+                m_isMoving = true;
+                return true;
+            }
+        }
+    }
     
-    return distanceSquared < (m_radius * m_radius);
+    return false;
 }
 
 void Ball::ApplyForce(float power, float angle) {
@@ -125,6 +167,22 @@ void Ball::HandleCollision(Ball& other) {
         m_velocityY -= impulseY / m_mass;
         other.m_velocityX += impulseX / other.m_mass;
         other.m_velocityY += impulseY / other.m_mass;
+
+        // Cap velocities after collision
+        const float MAX_COLLISION_VELOCITY = 15.0f;
+        float speed = sqrt(m_velocityX * m_velocityX + m_velocityY * m_velocityY);
+        if (speed > MAX_COLLISION_VELOCITY) {
+            float scale = MAX_COLLISION_VELOCITY / speed;
+            m_velocityX *= scale;
+            m_velocityY *= scale;
+        }
+        
+        speed = sqrt(other.m_velocityX * other.m_velocityX + other.m_velocityY * other.m_velocityY);
+        if (speed > MAX_COLLISION_VELOCITY) {
+            float scale = MAX_COLLISION_VELOCITY / speed;
+            other.m_velocityX *= scale;
+            other.m_velocityY *= scale;
+        }
         
         float overlap = (m_radius + other.m_radius) - distance;
         float moveX = (overlap * nx) * 0.5f;
@@ -216,38 +274,45 @@ void Ball::HandleBoundaryCollisions() {
 }
 
 void Ball::HandleWallCollision(const Wall& wall) {
-    float wallX, wallY;
-    wall.GetPosition(wallX, wallY);
-    float wallWidth = wall.GetWidth();
-    float wallHeight = wall.GetHeight();
-    
-    // Calculate wall boundaries
-    float wallLeft = wallX - wallWidth/2;
-    float wallRight = wallX + wallWidth/2;
-    float wallTop = wallY - wallHeight/2;
-    float wallBottom = wallY + wallHeight/2;
-    
-    const float BOUNCE_DAMPENING = 0.95f;
-    
-    // Determine which side was hit and bounce accordingly
-    if (m_posX < wallLeft) {
-        m_posX = wallLeft - m_radius;
-        m_velocityX = -fabs(m_velocityX) * BOUNCE_DAMPENING;
-        m_isMoving = true;
-    }
-    if (m_posX > wallRight) {
-        m_posX = wallRight + m_radius;
-        m_velocityX = fabs(m_velocityX) * BOUNCE_DAMPENING;
-        m_isMoving = true;
-    }
-    if (m_posY < wallTop) {
-        m_posY = wallTop - m_radius;
-        m_velocityY = -fabs(m_velocityY) * BOUNCE_DAMPENING;
-        m_isMoving = true;
-    }
-    if (m_posY > wallBottom) {
-        m_posY = wallBottom + m_radius;
-        m_velocityY = fabs(m_velocityY) * BOUNCE_DAMPENING;
-        m_isMoving = true;
+    float wallLeft = wall.GetPosition().x - wall.GetWidth()/2;
+    float wallRight = wall.GetPosition().x + wall.GetWidth()/2;
+    float wallTop = wall.GetPosition().y - wall.GetHeight()/2;
+    float wallBottom = wall.GetPosition().y + wall.GetHeight()/2;
+
+    // Check if ball overlaps with wall
+    bool collision = false;
+    float penetrationX = 0.0f;
+    float penetrationY = 0.0f;
+
+    // Check horizontal overlap
+    if (m_posX + m_radius > wallLeft && m_posX - m_radius < wallRight) {
+        // Check vertical overlap
+        if (m_posY + m_radius > wallTop && m_posY - m_radius < wallBottom) {
+            collision = true;
+
+            // Calculate penetration depths
+            float rightPen = m_posX + m_radius - wallLeft;
+            float leftPen = wallRight - (m_posX - m_radius);
+            float bottomPen = m_posY + m_radius - wallTop;
+            float topPen = wallBottom - (m_posY - m_radius);
+
+            // Find smallest penetration
+            float minPenX = (rightPen < leftPen) ? -rightPen : leftPen;
+            float minPenY = (bottomPen < topPen) ? -bottomPen : topPen;
+
+            // Determine which axis to resolve on based on minimum penetration
+            if (abs(minPenX) < abs(minPenY)) {
+                penetrationX = minPenX;
+                m_velocityX = -m_velocityX * BOUNCE_DAMPENING;
+            } else {
+                penetrationY = minPenY;
+                m_velocityY = -m_velocityY * BOUNCE_DAMPENING;
+            }
+
+            // Move ball out of wall
+            m_posX += penetrationX;
+            m_posY += penetrationY;
+            m_isMoving = true;
+        }
     }
 }
