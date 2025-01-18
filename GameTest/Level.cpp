@@ -2,6 +2,7 @@
 #include "Level.h"
 #include "GameEventManager.h"
 #include "Enemy.h"
+#include "Collectible.h"
 
 Level::Level(int par) : m_par(par), m_strokes(0) {}
 
@@ -19,7 +20,6 @@ void Level::Update(float deltaTime) {
             else if (auto enemy = dynamic_cast<Enemy*>(obj.get())) {
                 if (enemy->CheckCollision(*m_ball)) {
                     enemy->Kill();
-                    // Optional: Add bounce effect
                     float ballX, ballY, enemyX, enemyY;
                     m_ball->GetPosition(ballX, ballY);
                     enemy->GetPosition(enemyX, enemyY);
@@ -29,7 +29,19 @@ void Level::Update(float deltaTime) {
                     if (length > 0) {
                         dx /= length;
                         dy /= length;
-                        m_ball->SetVelocity(dx * 1.0f, dy * 1.0f);
+                        m_ball->SetVelocity(dx * 10.0f, dy * 10.0f);
+                    }
+                }
+            }
+            else if (auto collectible = dynamic_cast<Collectible*>(obj.get())) {
+                if (!collectible->IsCollected()) {
+                    float ballX, ballY, collectX, collectY;
+                    m_ball->GetPosition(ballX, ballY);
+                    collectible->GetPosition(collectX, collectY);
+                    float dx = ballX - collectX;
+                    float dy = ballY - collectY;
+                    if (sqrt(dx*dx + dy*dy) < m_ball->GetRadius() + 8.0f) {
+                        collectible->Collect();
                     }
                 }
             }

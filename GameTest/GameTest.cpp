@@ -10,6 +10,7 @@
 #include "GameEventManager.h"
 #include "Wall.h"
 #include "Enemy.h"
+#include "Collectible.h"
 
 using namespace std;
 
@@ -56,20 +57,23 @@ void RenderGameComplete();
 void ResetGame();
 
 void CreateCourse() {
-    // Hole 1: Simple straight shot with walls and enemies
+    // Hole 1: Simple straight shot with walls
     auto level1 = std::make_unique<Level>(3);
     level1->SetBall(GameObjectFactory::CreateBall(100.0f, 300.0f));
     level1->SetHole(GameObjectFactory::CreateHole(700.0f, 300.0f, 3));
     
-    // Add walls
-    level1->AddObject(std::make_unique<Wall>(400.0f, 200.0f, 200.0f, 20.0f));
+    // Add collectibles
+    level1->AddObject(std::make_unique<Collectible>(250.0f, 250.0f));
+    level1->AddObject(std::make_unique<Collectible>(450.0f, 350.0f));
+    level1->AddObject(std::make_unique<Collectible>(550.0f, 250.0f));
     
-    // Add enemies
-    level1->AddObject(std::make_unique<Enemy>(300.0f, 300.0f));
-    level1->AddObject(std::make_unique<Enemy>(500.0f, 400.0f));
-    level1->AddObject(std::make_unique<Enemy>(400.0f, 250.0f));
+    // Add some walls
+    level1->AddObject(std::make_unique<Wall>(400.0f, 200.0f, 200.0f, 20.0f));  // Horizontal wall
+    level1->AddObject(std::make_unique<Wall>(500.0f, 400.0f, 20.0f, 150.0f));  // Vertical wall
     
     levels.push_back(std::move(level1));
+    
+    // Add more levels with different wall configurations...
 }
 
 void Init() {

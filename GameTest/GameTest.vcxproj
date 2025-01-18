@@ -187,6 +187,7 @@
     <ClInclude Include="App\SimpleSound.h" />
     <ClInclude Include="App\SimpleSprite.h" />
     <ClInclude Include="ball.h" />
+    <ClInclude Include="Collectible.h" />
     <ClInclude Include="Enemy.h" />
     <ClInclude Include="GameEventManager.h" />
     <ClInclude Include="GameObject.h" />
@@ -206,6 +207,7 @@
     <ClCompile Include="App\SimpleSound.cpp" />
     <ClCompile Include="App\SimpleSprite.cpp" />
     <ClCompile Include="ball.cpp" />
+    <ClCompile Include="Collectible.cpp" />
     <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="GameEventManager.cpp" />
     <ClCompile Include="GameObject.cpp" />
