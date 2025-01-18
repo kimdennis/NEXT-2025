@@ -3,6 +3,7 @@
 #include "App/app.h"
 #include "Wall.h"
 #include "Enemy.h"
+#include "Collectible.h"
 #include <vector>
 
 // Add screen constants

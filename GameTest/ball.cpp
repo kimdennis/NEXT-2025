@@ -123,6 +123,24 @@ bool Ball::CheckCollision(const GameObject& other) {
         }
     }
     
+    // Add collectible collision check
+    if (Collectible* collectible = const_cast<Collectible*>(dynamic_cast<const Collectible*>(&other))) {
+        if (!collectible->IsCollected()) {
+            float collectibleX, collectibleY;
+            collectible->GetPosition(collectibleX, collectibleY);
+            
+            float dx = m_posX - collectibleX;
+            float dy = m_posY - collectibleY;
+            float distanceSquared = dx * dx + dy * dy;
+            float minDistance = m_radius + 8.0f; // 8.0f is the collectible's radius
+            
+            if (distanceSquared < minDistance * minDistance) {
+                collectible->Collect();
+                return true;
+            }
+        }
+    }
+    
     return false;
 }
 
