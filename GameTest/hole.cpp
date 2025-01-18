@@ -44,16 +44,30 @@ void Hole::Draw() {
 }
 
 bool Hole::CheckCollision(const GameObject& other) {
-    float otherX, otherY;
-    other.GetPosition(otherX, otherY);
-    return IsInHole(otherX, otherY);
+    const Ball* ball = dynamic_cast<const Ball*>(&other);
+    if (!ball) return false;
+    
+    float ballX, ballY;
+    ball->GetPosition(ballX, ballY);
+    
+    return IsInHole(ballX, ballY, ball->GetVelocityX(), ball->GetVelocityY());
 }
 
-bool Hole::IsInHole(float x, float y) const {
+bool Hole::IsInHole(float x, float y, float velocityX, float velocityY) const {
     float dx = x - m_holeX;
     float dy = y - m_holeY;
     float distanceSquared = dx * dx + dy * dy;
-    return distanceSquared < (10.0f * 10.0f);  // 10.0f is the hole radius
+    
+    // Check if ball is over the hole
+    if (distanceSquared < (HOLE_RADIUS * HOLE_RADIUS)) {
+        // Calculate total velocity
+        float totalVelocity = sqrt(velocityX * velocityX + velocityY * velocityY);
+        
+        // Only allow entry if velocity is below maximum
+        return totalVelocity <= MAX_ENTRY_SPEED;
+    }
+    
+    return false;
 }
 
 void Hole::AddObstacle(float x, float y, float width, float height) {

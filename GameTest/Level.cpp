@@ -13,10 +13,7 @@ void Level::Update(float deltaTime) {
         // Check collisions with all objects
         for (auto& obj : m_objects) {
             if (obj) {
-                // First check if ball collides with object
                 m_ball->CheckCollision(*obj);
-                
-                // Then check if object collides with ball (for special behaviors)
                 obj->CheckCollision(*m_ball);
             }
         }
@@ -25,7 +22,7 @@ void Level::Update(float deltaTime) {
         if (m_hole && m_ball->IsMoving()) {
             float ballX, ballY;
             m_ball->GetPosition(ballX, ballY);
-            if (m_hole->IsInHole(ballX, ballY)) {
+            if (m_hole->IsInHole(ballX, ballY, m_ball->GetVelocityX(), m_ball->GetVelocityY())) {
                 m_ball->Stop();
                 GameEventManager::GetInstance().Emit(GameEventManager::EventType::HoleIn);
             }

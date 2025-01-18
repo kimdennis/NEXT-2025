@@ -74,11 +74,21 @@ void Ball::Update(float deltaTime) {
 }
 
 void Ball::Draw() {
-    float alpha = m_accumulator / (1.0f / 240.0f);
-    float renderX = m_prevPosX + (m_posX - m_prevPosX) * alpha;
-    float renderY = m_prevPosY + (m_posY - m_prevPosY) * alpha;
+    // Draw the ball
+    DrawCircle(m_posX, m_posY, m_radius, 1.0f, 1.0f, 1.0f, 1.0f);
     
-    DrawCircle(renderX, renderY, m_radius, 1.0f, 1.0f, 1.0f, 1.0f);
+    // Display velocity information
+    char velocityText[64];
+    float totalVelocity = sqrt(m_velocityX * m_velocityX + m_velocityY * m_velocityY);
+    sprintf_s(velocityText, "Velocity: %.1f", totalVelocity);
+    
+    // Position the text above the ball
+    App::Print(static_cast<int>(m_posX - 30), static_cast<int>(m_posY - m_radius - 20), velocityText);
+    
+    // Optionally show X and Y components
+    char componentText[64];
+    sprintf_s(componentText, "X: %.1f Y: %.1f", m_velocityX, m_velocityY);
+    App::Print(static_cast<int>(m_posX - 30), static_cast<int>(m_posY - m_radius - 35), componentText);
 }
 
 bool Ball::CheckCollision(const GameObject& other) {
