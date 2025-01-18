@@ -30,4 +30,6 @@ public:
     int GetPar() const { return m_par; }
     int GetStrokes() const { return m_strokes; }
     void AddStroke();
+
+    const std::vector<std::unique_ptr<GameObject>>& GetObjects() const { return m_objects; }
 };
