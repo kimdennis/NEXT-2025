@@ -25,6 +25,7 @@ void Ball::Update(float deltaTime) {
     if (!m_isMoving) return;
 
     const float FIXED_TIMESTEP = 1.0f / 240.0f;
+    const float MAX_VELOCITY = 25.0f;
     
     m_accumulator += deltaTime;
     
@@ -33,6 +34,12 @@ void Ball::Update(float deltaTime) {
         m_prevPosY = m_posY;
 
         float speed = sqrt(m_velocityX * m_velocityX + m_velocityY * m_velocityY);
+        if (speed > MAX_VELOCITY) {
+            float scale = MAX_VELOCITY / speed;
+            m_velocityX *= scale;
+            m_velocityY *= scale;
+        }
+
         if (speed > 0.0f) {
             float frictionMagnitude = m_friction * speed * speed * 0.05f;
             float frictionX = -(m_velocityX / speed) * frictionMagnitude;

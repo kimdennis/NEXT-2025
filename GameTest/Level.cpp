@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Level.h"
 #include "GameEventManager.h"
+#include "Enemy.h"
 
 Level::Level(int par) : m_par(par), m_strokes(0) {}
 
@@ -8,11 +9,28 @@ void Level::Update(float deltaTime) {
     if (m_ball) {
         m_ball->Update(deltaTime);
         
-        // Check wall collisions
+        // Check collisions
         for (const auto& obj : m_objects) {
             if (auto wall = dynamic_cast<Wall*>(obj.get())) {
                 if (wall->CheckCollision(*m_ball)) {
                     m_ball->HandleWallCollision(*wall);
+                }
+            }
+            else if (auto enemy = dynamic_cast<Enemy*>(obj.get())) {
+                if (enemy->CheckCollision(*m_ball)) {
+                    enemy->Kill();
+                    // Optional: Add bounce effect
+                    float ballX, ballY, enemyX, enemyY;
+                    m_ball->GetPosition(ballX, ballY);
+                    enemy->GetPosition(enemyX, enemyY);
+                    float dx = ballX - enemyX;
+                    float dy = ballY - enemyY;
+                    float length = sqrt(dx * dx + dy * dy);
+                    if (length > 0) {
+                        dx /= length;
+                        dy /= length;
+                        m_ball->SetVelocity(dx * 1.0f, dy * 1.0f);
+                    }
                 }
             }
         }
