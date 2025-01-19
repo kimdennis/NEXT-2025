@@ -13,6 +13,15 @@
 #include "Collectible.h"
 #include "LevelGenerator.h"
 
+// Add at the top of the file with other includes
+#define _USE_MATH_DEFINES
+#include <cmath>
+
+// If M_PI is still not defined, define it manually
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 using namespace std;
 
 //------------------------------------------------------------------------
@@ -26,15 +35,15 @@ int totalStrokes = 0;
 // Aiming variables
 float aimAngle = 0.0f;
 float power = 0.0f;
-const float MAX_POWER = 80.0f;
-const float MAX_DRAG_DISTANCE = 150.0f;
+const float MAX_POWER = 100.0f;
+const float MAX_DRAG_DISTANCE = 200.0f;
 bool isDragging = false;
 float dragStartX = 0.0f;
 float dragStartY = 0.0f;
 
 // Screen boundaries
-const float SCREEN_WIDTH = 800.0f;
-const float SCREEN_HEIGHT = 600.0f;
+const float SCREEN_WIDTH = 1024.0f;
+const float SCREEN_HEIGHT = 768.0f;
 const float BALL_RADIUS = 6.0f;
 
 // Game states
@@ -49,6 +58,11 @@ GameState gameState = MENU;
 const float FIXED_TIMESTEP = 1.0f / 240.0f;
 float accumulator = 0.0f;
 
+// Add these constants at the top with your other constants
+const int PROJECTION_DOTS = 10;  // Number of dots to show in the projection
+const float DOT_SPACING = 20.0f; // Space between projection dots
+const float DOT_SIZE = 3.0f;     // Size of each projection dot
+
 // Add these function declarations at the top after the includes
 void HandleDragging(float mouseX, float mouseY, float ballX, float ballY);
 void RenderMenu();
@@ -56,6 +70,8 @@ void RenderHUD();
 void RenderAimingLine();
 void RenderGameComplete();
 void ResetGame();
+void DrawProjectionLine(float startX, float startY, float angle, float power);
+void DrawArrow(float x, float y, float angle, float size);
 
 void CreateCourse() {
     LevelGenerator generator;
@@ -148,6 +164,14 @@ void Render() {
                 currentLevel->Draw();
                 RenderHUD();
                 RenderAimingLine();
+                
+                // Get ball position correctly
+                Ball* ball = currentLevel->GetBall();
+                if (ball) {
+                    float ballX, ballY;
+                    ball->GetPosition(ballX, ballY);
+                    DrawProjectionLine(ballX, ballY, aimAngle, power);
+                }
             }
             break;
             
@@ -217,4 +241,190 @@ void RenderGameComplete() {
     sprintf_s(buffer, "Total Strokes: %d", totalStrokes);
     App::Print(300, 250, buffer);
     App::Print(300, 200, "Click to Play Again");
+}
+
+void DrawArrow(float x, float y, float angle, float size) {
+    // Calculate arrow head points
+    float arrowAngle = 150.0f * (M_PI / 180.0f); // 150 degrees for arrow head
+    
+    // Right side of arrow head
+    float rightX = x + cos(angle + arrowAngle) * size;
+    float rightY = y + sin(angle + arrowAngle) * size;
+    
+    // Left side of arrow head
+    float leftX = x + cos(angle - arrowAngle) * size;
+    float leftY = y + sin(angle - arrowAngle) * size;
+    
+    // Draw arrow head
+    App::DrawLine(x, y, rightX, rightY, 1.0f, 1.0f, 1.0f);
+    App::DrawLine(x, y, leftX, leftY, 1.0f, 1.0f, 1.0f);
+}
+
+void DrawProjectionLine(float startX, float startY, float angle, float power) {
+    if (!isDragging || !currentLevel) return;
+
+    const int MAX_BOUNCES = 3;  // Maximum number of bounces to simulate
+    const int STEPS_PER_BOUNCE = 10;  // Number of points to draw between bounces
+    const float BOUNCE_DAMPENING = 0.8f;  // Match the ball's bounce dampening
+    const float BALL_RADIUS = 6.0f;  // Match the ball's radius
+    const float ENEMY_FORCE_MULTIPLIER = 1.2f;  // Multiplier for enemy deflection
+    const float DOT_LENGTH = 5.0f;  // Length of each dot
+    const float DOT_SPACING = 10.0f;  // Space between dots
+    const float ARROW_SIZE = 10.0f;  // Size of the arrow head
+    
+    float normalizedPower = power / MAX_POWER;
+    float velocityX = cos(angle) * normalizedPower * MAX_POWER;
+    float velocityY = sin(angle) * normalizedPower * MAX_POWER;
+    
+    float currentX = startX;
+    float currentY = startY;
+    float timeStep = 0.016f;
+    
+    float accumulatedDistance = 0.0f;  // Track distance for dot spacing
+    float lastDotX = startX;  // Position of last drawn dot
+    float lastDotY = startY;
+    float lastValidX = startX;  // Last valid position for arrow
+    float lastValidY = startY;
+    float lastValidAngle = angle;  // Last valid angle for arrow
+    
+    const auto& objects = currentLevel->GetObjects();
+    
+    for (int bounce = 0; bounce <= MAX_BOUNCES; bounce++) {
+        for (int step = 0; step < STEPS_PER_BOUNCE; step++) {
+            float prevX = currentX;
+            float prevY = currentY;
+            
+            currentX += velocityX * timeStep;
+            currentY += velocityY * timeStep;
+            
+            // Calculate distance moved this step
+            float dx = currentX - prevX;
+            float dy = currentY - prevY;
+            float stepDistance = sqrt(dx * dx + dy * dy);
+            accumulatedDistance += stepDistance;
+            
+            // Draw dots when we've moved far enough
+            while (accumulatedDistance >= DOT_SPACING) {
+                float t = DOT_SPACING / accumulatedDistance;
+                float dotX = prevX + dx * t;
+                float dotY = prevY + dy * t;
+                
+                // Draw a small line segment for the dot
+                float dotAngle = atan2(dy, dx);
+                float dotEndX = dotX + cos(dotAngle) * DOT_LENGTH;
+                float dotEndY = dotY + sin(dotAngle) * DOT_LENGTH;
+                
+                App::DrawLine(dotX, dotY, dotEndX, dotEndY, 1.0f, 1.0f, 1.0f);
+                
+                lastDotX = dotX;
+                lastDotY = dotY;
+                accumulatedDistance -= DOT_SPACING;
+            }
+            
+            bool collision = false;
+            
+            // Check level boundaries
+            if (currentX - BALL_RADIUS < 0) {
+                currentX = BALL_RADIUS;
+                velocityX = -velocityX * BOUNCE_DAMPENING;
+                collision = true;
+            }
+            else if (currentX + BALL_RADIUS > SCREEN_WIDTH) {
+                currentX = SCREEN_WIDTH - BALL_RADIUS;
+                velocityX = -velocityX * BOUNCE_DAMPENING;
+                collision = true;
+            }
+            
+            if (currentY - BALL_RADIUS < 0) {
+                currentY = BALL_RADIUS;
+                velocityY = -velocityY * BOUNCE_DAMPENING;
+                collision = true;
+            }
+            else if (currentY + BALL_RADIUS > SCREEN_HEIGHT) {
+                currentY = SCREEN_HEIGHT - BALL_RADIUS;
+                velocityY = -velocityY * BOUNCE_DAMPENING;
+                collision = true;
+            }
+            
+            // Check collisions with all objects
+            for (const auto& obj : objects) {
+                // Check walls
+                if (const Wall* wall = dynamic_cast<const Wall*>(obj.get())) {
+                    float wallLeft = wall->GetPosition().x - wall->GetWidth()/2;
+                    float wallRight = wall->GetPosition().x + wall->GetWidth()/2;
+                    float wallTop = wall->GetPosition().y - wall->GetHeight()/2;
+                    float wallBottom = wall->GetPosition().y + wall->GetHeight()/2;
+                    
+                    // Check if current position (including ball radius) intersects with wall
+                    if (currentX + BALL_RADIUS > wallLeft && currentX - BALL_RADIUS < wallRight &&
+                        currentY + BALL_RADIUS > wallTop && currentY - BALL_RADIUS < wallBottom) {
+                        
+                        float rightPen = (currentX + BALL_RADIUS) - wallLeft;
+                        float leftPen = wallRight - (currentX - BALL_RADIUS);
+                        float bottomPen = (currentY + BALL_RADIUS) - wallTop;
+                        float topPen = wallBottom - (currentY - BALL_RADIUS);
+                        
+                        float minPenX = (rightPen < leftPen) ? -rightPen : leftPen;
+                        float minPenY = (bottomPen < topPen) ? -bottomPen : topPen;
+                        
+                        if (abs(minPenX) < abs(minPenY)) {
+                            velocityX = -velocityX * BOUNCE_DAMPENING;
+                            currentX = prevX;
+                        } else {
+                            velocityY = -velocityY * BOUNCE_DAMPENING;
+                            currentY = prevY;
+                        }
+                        collision = true;
+                        break;
+                    }
+                }
+                // Check enemies
+                else if (const Enemy* enemy = dynamic_cast<const Enemy*>(obj.get())) {
+                    float enemyX, enemyY;
+                    enemy->GetPosition(enemyX, enemyY);
+                    
+                    float dx = currentX - enemyX;
+                    float dy = currentY - enemyY;
+                    float distanceSquared = dx * dx + dy * dy;
+                    float minDistance = BALL_RADIUS + enemy->GetSize();
+                    
+                    if (distanceSquared < minDistance * minDistance) {
+                        // Calculate deflection angle (8 possible directions)
+                        float angleToEnemy = atan2(dy, dx);
+                        float deflectionAngle = round(angleToEnemy / (M_PI / 4)) * (M_PI / 4);
+                        
+                        // Calculate new velocity based on deflection angle
+                        float currentSpeed = sqrt(velocityX * velocityX + velocityY * velocityY);
+                        float newSpeed = currentSpeed * ENEMY_FORCE_MULTIPLIER;
+                        
+                        velocityX = cos(deflectionAngle) * newSpeed;
+                        velocityY = sin(deflectionAngle) * newSpeed;
+                        
+                        // Move back to previous position to prevent sticking
+                        currentX = prevX;
+                        currentY = prevY;
+                        
+                        collision = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (collision) {
+                // Store last valid position and angle before collision
+                lastValidX = prevX;
+                lastValidY = prevY;
+                lastValidAngle = atan2(velocityY, velocityX);
+                break;
+            }
+            
+            // Update last valid position and angle
+            lastValidX = currentX;
+            lastValidY = currentY;
+            lastValidAngle = atan2(velocityY, velocityX);
+        }
+    }
+    
+    // Draw arrow at the end of the last valid position
+    DrawArrow(lastValidX, lastValidY, lastValidAngle, ARROW_SIZE);
 }
