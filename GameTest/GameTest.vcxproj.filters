@@ -26,6 +26,13 @@
     </ClCompile>
     <ClCompile Include="ball.cpp" />
     <ClCompile Include="hole.cpp" />
+    <ClCompile Include="Collectible.cpp" />
+    <ClCompile Include="GameEventManager.cpp" />
+    <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="GameObjectFactory.cpp" />
+    <ClCompile Include="Level.cpp" />
+    <ClCompile Include="LevelGenerator.cpp" />
+    <ClCompile Include="Wall.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
@@ -58,6 +65,15 @@
     </ClInclude>
     <ClInclude Include="ball.h" />
     <ClInclude Include="hole.h" />
+    <ClInclude Include="Collectible.h" />
+    <ClInclude Include="Enemy.h" />
+    <ClInclude Include="GameEventManager.h" />
+    <ClInclude Include="GameObject.h" />
+    <ClInclude Include="GameObjectFactory.h" />
+    <ClInclude Include="Level.h" />
+    <ClInclude Include="LevelGenerator.h" />
+    <ClInclude Include="Wall.h" />
+    <ClInclude Include="PathNode.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="API">

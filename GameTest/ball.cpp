@@ -156,7 +156,7 @@ bool Ball::CheckCollision(const GameObject& other) {
 
 void Ball::ApplyForce(float power, float angle) {
     const float MAX_DRAG_LENGTH = 100.0f;
-    const float POWER_SCALE = 1.0f;
+    const float POWER_SCALE = 2.0f;
     
     // Normalize the power based on drag length
     float normalizedPower = (power / MAX_DRAG_LENGTH) * POWER_SCALE;
