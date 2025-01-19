@@ -36,7 +36,7 @@ int totalStrokes = 0;
 float aimAngle = 0.0f;
 float power = 0.0f;
 const float MAX_POWER = 100.0f;
-const float MAX_DRAG_DISTANCE = 200.0f;
+const float MAX_DRAG_DISTANCE = 600.0f;
 bool isDragging = false;
 float dragStartX = 0.0f;
 float dragStartY = 0.0f;
@@ -237,8 +237,8 @@ void RenderAimingLine() {
         float ballX, ballY;
         currentLevel->GetBall()->GetPosition(ballX, ballY);
         
-        float lineEndX = ballX - cos(aimAngle) * (power / MAX_POWER) * 50.0f;
-        float lineEndY = ballY - sin(aimAngle) * (power / MAX_POWER) * 50.0f;
+        float lineEndX = ballX - cos(aimAngle) * (power / MAX_POWER) * 150.0f;
+        float lineEndY = ballY - sin(aimAngle) * (power / MAX_POWER) * 150.0f;
         
         App::DrawLine(ballX, ballY, lineEndX, lineEndY, 1.0f, 0.0f, 0.0f);
     }
@@ -272,18 +272,18 @@ void DrawArrow(float x, float y, float angle, float size) {
 void DrawProjectionLine(float startX, float startY, float angle, float power) {
     if (!isDragging || !currentLevel) return;
 
-    const int MAX_BOUNCES = 3;  // Maximum number of bounces to simulate
-    const int STEPS_PER_BOUNCE = 10;  // Number of points to draw between bounces
-    const float BOUNCE_DAMPENING = 0.8f;  // Match the ball's bounce dampening
-    const float BALL_RADIUS = 6.0f;  // Match the ball's radius
-    const float ENEMY_FORCE_MULTIPLIER = 1.2f;  // Multiplier for enemy deflection
-    const float DOT_LENGTH = 5.0f;  // Length of each dot
-    const float DOT_SPACING = 10.0f;  // Space between dots
-    const float ARROW_SIZE = 10.0f;  // Size of the arrow head
+    const int MAX_BOUNCES = 5;  
+    const int STEPS_PER_BOUNCE = 15;  
+    const float BOUNCE_DAMPENING = 0.8f;
+    const float BALL_RADIUS = 6.0f;
+    const float ENEMY_FORCE_MULTIPLIER = 1.2f;
+    const float DOT_LENGTH = 5.0f;  
+    const float DOT_SPACING = 20.0f; 
+    const float ARROW_SIZE = 15.0f;  
     
     float normalizedPower = power / MAX_POWER;
-    float velocityX = cos(angle) * normalizedPower * MAX_POWER;
-    float velocityY = sin(angle) * normalizedPower * MAX_POWER;
+    float velocityX = cos(angle) * normalizedPower * MAX_POWER * 3.5f;  // Added 1.5x multiplier
+    float velocityY = sin(angle) * normalizedPower * MAX_POWER * 3.5f;  // Added 1.5x multiplier
     
     float currentX = startX;
     float currentY = startY;
