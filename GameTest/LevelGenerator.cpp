@@ -3,6 +3,7 @@
 #include "Enemy.h"
 #include "Collectible.h"
 #include "Wall.h"
+#include "GameEventManager.h"
 #include <random>
 #include <ctime>
 
@@ -300,6 +301,8 @@ void LevelGenerator::ApplyCourseTemplate(Level* level, const CourseTemplate& tem
                 holeY + HOLE_SAFETY_MARGIN > wallTop && 
                 holeY - HOLE_SAFETY_MARGIN < wallBottom) {
                 validHolePosition = false;
+                auto& eventManager = GameEventManager::GetInstance();
+                eventManager.Emit(GameEventManager::EventType::InvalidHolePlacement);
                 break;
             }
         }

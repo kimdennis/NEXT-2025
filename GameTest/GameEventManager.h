@@ -11,7 +11,8 @@ public:
         OutOfBounds,
         StrokeAdded,
         LevelComplete,
-        GameComplete
+        GameComplete,
+        InvalidHolePlacement
     };
 
     using EventCallback = std::function<void(const EventType&, void*)>;
