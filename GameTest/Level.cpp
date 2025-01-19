@@ -1,8 +1,10 @@
 #include "stdafx.h"
 #include "Level.h"
+#include "LevelGenerator.h"
 #include "GameEventManager.h"
 #include "Enemy.h"
 #include "Collectible.h"
+#include <cmath>
 
 Level::Level(int par) : m_par(par), m_strokes(0) {}
 
@@ -68,4 +70,59 @@ void Level::SetHole(std::unique_ptr<Hole> hole) {
 void Level::AddStroke() {
     m_strokes++;
     GameEventManager::GetInstance().Emit(GameEventManager::EventType::StrokeAdded);
+}
+
+void Level::RandomizeObjects() {
+    // Keep track of existing objects' types and counts
+    int enemyCount = 0;
+    int collectibleCount = 0;
+    int wallCount = 0;
+    
+    // Count existing objects
+    for (const auto& obj : m_objects) {
+        if (dynamic_cast<Enemy*>(obj.get())) enemyCount++;
+        else if (dynamic_cast<Collectible*>(obj.get())) collectibleCount++;
+        else if (dynamic_cast<Wall*>(obj.get())) wallCount++;
+    }
+    
+    // Clear existing objects
+    m_objects.clear();
+    
+    // Create new LevelGenerator instance for helper functions
+    LevelGenerator generator;
+    
+    // Regenerate walls
+    for (int i = 0; i < wallCount; i++) {
+        float x = generator.GetRandomFloat(100.0f, SCREEN_WIDTH - 100.0f);
+        float y = generator.GetRandomFloat(100.0f, SCREEN_HEIGHT - 100.0f);
+        float width = generator.GetRandomFloat(50.0f, 150.0f);
+        float height = generator.GetRandomFloat(20.0f, 100.0f);
+        
+        auto wall = std::make_unique<Wall>(x, y, width, height);
+        if (generator.IsPositionValid(x, y, std::sqrt(width*width + height*height) * 0.5f, m_objects)) {
+            m_objects.push_back(std::move(wall));
+        }
+    }
+    
+    // Regenerate enemies
+    for (int i = 0; i < enemyCount; i++) {
+        float x = generator.GetRandomFloat(100.0f, SCREEN_WIDTH - 100.0f);
+        float y = generator.GetRandomFloat(100.0f, SCREEN_HEIGHT - 100.0f);
+        
+        auto enemy = std::make_unique<Enemy>(x, y);
+        if (generator.IsPositionValid(x, y, 15.0f, m_objects)) {
+            m_objects.push_back(std::move(enemy));
+        }
+    }
+    
+    // Regenerate collectibles
+    for (int i = 0; i < collectibleCount; i++) {
+        float x = generator.GetRandomFloat(100.0f, SCREEN_WIDTH - 100.0f);
+        float y = generator.GetRandomFloat(100.0f, SCREEN_HEIGHT - 100.0f);
+        
+        auto collectible = std::make_unique<Collectible>(x, y);
+        if (generator.IsPositionValid(x, y, 8.0f, m_objects)) {
+            m_objects.push_back(std::move(collectible));
+        }
+    }
 }

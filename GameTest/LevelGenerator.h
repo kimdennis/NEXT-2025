@@ -14,12 +14,13 @@ private:
 
     Hole* m_hole;
     
-    bool IsPositionValid(float x, float y, float radius, const std::vector<std::unique_ptr<GameObject>>& existingObjects);
     bool IsTooCloseToHole(float x, float y, float minDistance);
-    float GetRandomFloat(float min, float max);
 
 public:
     LevelGenerator() : m_hole(nullptr) {}
     std::unique_ptr<Level> GenerateLevel(int levelNumber);
     void SetHole(Hole* hole) { m_hole = hole; }
+    
+    bool IsPositionValid(float x, float y, float radius, const std::vector<std::unique_ptr<GameObject>>& existingObjects);
+    float GetRandomFloat(float min, float max);
 };

@@ -32,4 +32,6 @@ public:
     void AddStroke();
 
     const std::vector<std::unique_ptr<GameObject>>& GetObjects() const { return m_objects; }
+
+    void RandomizeObjects();
 };

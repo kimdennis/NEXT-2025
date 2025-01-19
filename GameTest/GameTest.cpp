@@ -121,6 +121,14 @@ void Update(float deltaTime) {
             // Mouse drag controls
             Ball* ball = currentLevel->GetBall();
             if (ball && !ball->IsMoving()) {
+                // If we were moving before (isDragging was false) and now we're stopped,
+                // randomize the objects
+                static bool wasMoving = false;
+                if (wasMoving) {
+                    currentLevel->RandomizeObjects();
+                    wasMoving = false;
+                }
+                
                 float ballX, ballY;
                 ball->GetPosition(ballX, ballY);
                 
@@ -141,6 +149,7 @@ void Update(float deltaTime) {
                     totalStrokes++;
                     isDragging = false;
                     power = 0.0f;
+                    wasMoving = true;  // Set this flag when we start moving
                 }
             }
         } break;
