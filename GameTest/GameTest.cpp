@@ -109,21 +109,20 @@ void Init() {
     
     static bool eventsInitialized = false;
     if (!eventsInitialized) {
-        eventManager.Subscribe(GameEventManager::EventType::HoleIn, 
-            [](const GameEventManager::EventType&, void*) {
-                currentPowerupChoices = powerupSystem.GetRandomPowerups(3);
-                gameState = POWERUP_SELECT;
-            });
-
         eventManager.Subscribe(GameEventManager::EventType::StrokeAdded, 
             [](const GameEventManager::EventType&, void*) {
-                if (gameState != MENU) {
+                if (gameState == PLAYING) {  // Only count strokes during gameplay
                     totalStrokes++;
                     remainingStrokes--;
                 }
             });
             
-        // Add subscription for collectible
+        eventManager.Subscribe(GameEventManager::EventType::HoleIn, 
+            [](const GameEventManager::EventType&, void*) {
+                currentPowerupChoices = powerupSystem.GetRandomPowerups(3);
+                gameState = POWERUP_SELECT;
+            });
+            
         eventManager.Subscribe(GameEventManager::EventType::CollectibleCollected,
             [](const GameEventManager::EventType&, void*) {
                 remainingStrokes++;  // Grant an extra stroke
@@ -152,26 +151,8 @@ void Update(float deltaTime) {
             Ball* ball = currentLevel->GetBall();
             if (!ball) return;
 
-            // Update level and check if we need to deduct a stroke
+            // Update level
             currentLevel->Update(deltaTime);
-            
-            // Check for stroke deduction when ball stops moving
-            static bool wasMoving = false;
-            if (wasMoving && !ball->IsMoving()) {
-                remainingStrokes--;
-                totalStrokes++;
-                
-                // Get ball position
-                float ballX, ballY;
-                ball->GetPosition(ballX, ballY);
-                
-                // Only check for game over if we're out of strokes AND not in the hole
-                if (remainingStrokes <= 0 && !currentLevel->GetHole()->IsInHole(ballX, ballY)) {
-                    gameState = COMPLETE;
-                    return;
-                }
-            }
-            wasMoving = ball->IsMoving();
             
             // Mouse drag controls
             if (!ball->IsMoving()) {
@@ -193,9 +174,21 @@ void Update(float deltaTime) {
                 if (!App::IsKeyPressed(VK_LBUTTON) && isDragging) {
                     if (remainingStrokes > 0) {
                         ball->ApplyForce(power, aimAngle);
+                        currentLevel->AddStroke();  // This will emit the StrokeAdded event
                     }
                     isDragging = false;
                     power = 0.0f;
+                }
+            }
+            
+            // Check for game over
+            if (remainingStrokes <= 0 && !ball->IsMoving()) {
+                float ballX, ballY;
+                ball->GetPosition(ballX, ballY);
+                Hole* hole = currentLevel->GetHole();
+                if (!hole->IsInHole(ballX, ballY)) {
+                    gameState = COMPLETE;
+                    return;
                 }
             }
         } break;
@@ -313,7 +306,7 @@ void ResetGame() {
     }
     
     // Reset game state
-    gameState = MENU;
+    gameState = MENU;  // Important: Start in MENU state
     isDragging = false;
     power = 0.0f;
     aimAngle = 0.0f;
