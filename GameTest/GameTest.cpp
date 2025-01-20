@@ -63,6 +63,10 @@ const int PROJECTION_DOTS = 10;  // Number of dots to show in the projection
 const float DOT_SPACING = 20.0f; // Space between projection dots
 const float DOT_SIZE = 3.0f;     // Size of each projection dot
 
+// Add these variables with other game state variables
+int remainingStrokes = 3;  // Starting strokes
+const int STROKES_PER_LEVEL = 3;  // Strokes gained per level
+
 // Add these function declarations at the top after the includes
 void HandleDragging(float mouseX, float mouseY, float ballX, float ballY);
 void RenderMenu();
@@ -85,6 +89,7 @@ void CreateCourse() {
 void Init() {
     CreateCourse();
     currentLevel = std::move(levels[0]);
+    remainingStrokes = 3;  // Initialize starting strokes
     
     // Subscribe to game events
     auto& eventManager = GameEventManager::GetInstance();
@@ -98,6 +103,9 @@ void Init() {
             // Move to next level
             currentHoleIndex++;
             currentLevel = std::move(levels[currentHoleIndex]);
+            
+            // Add strokes for completing the level
+            remainingStrokes += STROKES_PER_LEVEL;
             
             // Optional: Remove old levels to prevent memory buildup
             if (currentHoleIndex > 2) {  // Keep last 3 levels
@@ -123,11 +131,28 @@ void Update(float deltaTime) {
                 return;
             }
 
+            Ball* ball = currentLevel->GetBall();
+            if (!ball) return;
+
+            // Update level and check if we need to deduct a stroke
             currentLevel->Update(deltaTime);
             
+            // Check for stroke deduction when ball stops moving
+            static bool wasMoving = false;
+            if (wasMoving && !ball->IsMoving()) {
+                remainingStrokes--;
+                totalStrokes++;
+                
+                // Check for game over when ball stops and no strokes remain
+                if (remainingStrokes <= 0) {
+                    gameState = COMPLETE;
+                    return;
+                }
+            }
+            wasMoving = ball->IsMoving();
+            
             // Mouse drag controls
-            Ball* ball = currentLevel->GetBall();
-            if (ball && !ball->IsMoving()) {
+            if (!ball->IsMoving()) {
                 float ballX, ballY;
                 ball->GetPosition(ballX, ballY);
                 
@@ -144,8 +169,9 @@ void Update(float deltaTime) {
                 }
                 
                 if (!App::IsKeyPressed(VK_LBUTTON) && isDragging) {
-                    ball->ApplyForce(power, aimAngle);
-                    totalStrokes++;
+                    if (remainingStrokes > 0) {
+                        ball->ApplyForce(power, aimAngle);
+                    }
                     isDragging = false;
                     power = 0.0f;
                 }
@@ -207,7 +233,8 @@ void HandleDragging(float mouseX, float mouseY, float ballX, float ballY) {
 void ResetGame() {
     currentHoleIndex = 0;
     totalStrokes = 0;
-    CreateCourse();  // Recreate the course
+    remainingStrokes = 3;  // Reset to starting strokes
+    CreateCourse();
     currentLevel = std::move(levels[0]);
     gameState = MENU;
 }
@@ -224,12 +251,15 @@ void RenderHUD() {
     sprintf_s(buffer, "Level: %d", currentHoleIndex + 1);
     App::Print(10, 10, buffer);
     
-    sprintf_s(buffer, "Strokes: %d", totalStrokes);
+    sprintf_s(buffer, "Total Strokes: %d", totalStrokes);
     App::Print(10, 30, buffer);
+    
+    sprintf_s(buffer, "Strokes Left: %d", remainingStrokes);
+    App::Print(10, 50, buffer);
     
     if (currentLevel) {
         sprintf_s(buffer, "Par: %d", currentLevel->GetPar());
-        App::Print(10, 50, buffer);
+        App::Print(10, 70, buffer);
     }
 }
 
@@ -247,8 +277,10 @@ void RenderAimingLine() {
 
 void RenderGameComplete() {
     char buffer[32];
-    App::Print(300, 300, "Course Complete!");
-    sprintf_s(buffer, "Total Strokes: %d", totalStrokes);
+    App::Print(300, 350, "Game Over!");
+    sprintf_s(buffer, "Final Level: %d", currentHoleIndex + 1);
+    App::Print(300, 300, buffer);
+    sprintf_s(buffer, "Total Strokes Used: %d", totalStrokes);
     App::Print(300, 250, buffer);
     App::Print(300, 200, "Click to Play Again");
 }
