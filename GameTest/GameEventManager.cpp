@@ -12,3 +12,7 @@ void GameEventManager::Emit(EventType type, void* data) {
         }
     }
 }
+
+void GameEventManager::ClearAllSubscriptions() {
+    m_observers.clear();
+}

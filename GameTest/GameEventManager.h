@@ -25,6 +25,7 @@ public:
 
     void Subscribe(EventType type, EventCallback callback);
     void Emit(EventType type, void* data = nullptr);
+    void ClearAllSubscriptions();
 
 private:
     GameEventManager() = default;

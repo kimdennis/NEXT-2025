@@ -68,6 +68,9 @@ const float DOT_SIZE = 3.0f;     // Size of each projection dot
 int remainingStrokes = 3;  // Starting strokes
 const int STROKES_PER_LEVEL = 3;  // Strokes gained per level
 
+// Add these constants at the top with other constants
+const int INITIAL_STROKES = 3;  // Starting strokes for new games
+
 // Add these function declarations at the top after the includes
 void HandleDragging(float mouseX, float mouseY, float ballX, float ballY);
 void RenderMenu();
@@ -99,20 +102,35 @@ void CreateCourse() {
 void Init() {
     CreateCourse();
     currentLevel = std::move(levels[0]);
-    remainingStrokes = 3;  // Initialize starting strokes
+    remainingStrokes = INITIAL_STROKES;
+    totalStrokes = 0;
     
-    // Subscribe to game events
     auto& eventManager = GameEventManager::GetInstance();
-    eventManager.Subscribe(GameEventManager::EventType::HoleIn, 
-        [](const GameEventManager::EventType&, void*) {
-            currentPowerupChoices = powerupSystem.GetRandomPowerups(3);
-            gameState = POWERUP_SELECT;
-        });
+    
+    static bool eventsInitialized = false;
+    if (!eventsInitialized) {
+        eventManager.Subscribe(GameEventManager::EventType::HoleIn, 
+            [](const GameEventManager::EventType&, void*) {
+                currentPowerupChoices = powerupSystem.GetRandomPowerups(3);
+                gameState = POWERUP_SELECT;
+            });
 
-    eventManager.Subscribe(GameEventManager::EventType::CollectibleCollected, 
-        [](const GameEventManager::EventType&, void*) {
-            remainingStrokes++; // Add one stroke when collecting
-        });
+        eventManager.Subscribe(GameEventManager::EventType::StrokeAdded, 
+            [](const GameEventManager::EventType&, void*) {
+                if (gameState != MENU) {
+                    totalStrokes++;
+                    remainingStrokes--;
+                }
+            });
+            
+        // Add subscription for collectible
+        eventManager.Subscribe(GameEventManager::EventType::CollectibleCollected,
+            [](const GameEventManager::EventType&, void*) {
+                remainingStrokes++;  // Grant an extra stroke
+            });
+            
+        eventsInitialized = true;
+    }
 }
 
 void Update(float deltaTime) {
@@ -277,30 +295,30 @@ void HandleDragging(float mouseX, float mouseY, float ballX, float ballY) {
 }
 
 void ResetGame() {
+    // Clear existing levels and powerups
+    levels.clear();
+    powerupSystem.ClearPowerups();
+    currentPowerupChoices.clear();
+    
+    // Reset ALL stroke-related variables to zero first
     currentHoleIndex = 0;
     totalStrokes = 0;
-    remainingStrokes = 3;  // Reset to starting strokes
+    remainingStrokes = INITIAL_STROKES;
     
-    // Clear all levels and create new ones
-    levels.clear();
+    // Generate new course
     CreateCourse();
     currentLevel = std::move(levels[0]);
-    
-    // Reset powerup system
-    powerupSystem = PowerupSystem();  // Create fresh powerup system
-    currentPowerupChoices.clear();
+    if (currentLevel) {
+        currentLevel->Reset();
+    }
     
     // Reset game state
     gameState = MENU;
-    
-    // Reset ball powerups
-    if (currentLevel && currentLevel->GetBall()) {
-        currentLevel->GetBall()->ResetPowerups();
-        currentLevel->GetBall()->SetSpeedMultiplier(1.0f);
-    }
+    isDragging = false;
+    power = 0.0f;
+    aimAngle = 0.0f;
 }
 
-// ... Add RenderMenu, RenderHUD, RenderAimingLine, and RenderGameComplete functions ...
 
 void RenderMenu() {
     App::Print(300, 300, "Albatross");

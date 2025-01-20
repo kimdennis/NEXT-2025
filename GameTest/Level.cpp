@@ -46,13 +46,13 @@ void Level::Draw() {
 }
 
 void Level::Reset() {
-    m_strokes = 0;
+    m_strokes = 0;  // Reset level-specific stroke counter
     if (m_ball && m_hole) {
         float startX, startY;
         m_hole->GetStartPosition(startX, startY);
         m_ball->SetPosition(startX, startY);
         m_ball->Stop();
-        m_ball->ResetPowerups();  // Reset powerups when resetting level
+        m_ball->ResetPowerups();
     }
 }
 

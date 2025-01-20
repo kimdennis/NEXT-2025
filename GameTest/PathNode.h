@@ -1,6 +1,8 @@
 #pragma once
 #include <vector>
 
+//PathNode.h is a helper class for the pathfinding algorithm in the game
+
 struct PathNode {
     float x, y;
     std::vector<int> connections;  // Indices of connected nodes
