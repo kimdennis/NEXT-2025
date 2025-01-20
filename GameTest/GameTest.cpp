@@ -76,8 +76,8 @@ void DrawArrow(float x, float y, float angle, float size);
 void CreateCourse() {
     LevelGenerator generator;
     
-    // Create multiple levels with increasing difficulty
-    for (int i = 0; i < 5; i++) {
+    // Generate initial set of levels
+    for (int i = 0; i < 3; i++) {  // Start with 3 levels
         levels.push_back(generator.GenerateLevel(i));
     }
 }
@@ -90,11 +90,19 @@ void Init() {
     auto& eventManager = GameEventManager::GetInstance();
     eventManager.Subscribe(GameEventManager::EventType::HoleIn, 
         [](const GameEventManager::EventType&, void*) {
-            if (currentHoleIndex + 1 < levels.size()) {
-                currentHoleIndex++;
-                currentLevel = std::move(levels[currentHoleIndex]);
-            } else {
-                gameState = COMPLETE;
+            LevelGenerator generator;
+            
+            // Generate a new level when player completes current one
+            levels.push_back(generator.GenerateLevel(currentHoleIndex + 1));
+            
+            // Move to next level
+            currentHoleIndex++;
+            currentLevel = std::move(levels[currentHoleIndex]);
+            
+            // Optional: Remove old levels to prevent memory buildup
+            if (currentHoleIndex > 2) {  // Keep last 3 levels
+                levels.erase(levels.begin());
+                currentHoleIndex--;
             }
         });
 }
@@ -111,8 +119,7 @@ void Update(float deltaTime) {
             break;
             
         case PLAYING: {
-            if (!currentLevel || currentHoleIndex >= levels.size()) {
-                gameState = COMPLETE;
+            if (!currentLevel) {
                 return;
             }
 
@@ -214,12 +221,15 @@ void RenderMenu() {
 
 void RenderHUD() {
     char buffer[32];
-    sprintf_s(buffer, "Strokes: %d", totalStrokes);
+    sprintf_s(buffer, "Level: %d", currentHoleIndex + 1);
     App::Print(10, 10, buffer);
+    
+    sprintf_s(buffer, "Strokes: %d", totalStrokes);
+    App::Print(10, 30, buffer);
     
     if (currentLevel) {
         sprintf_s(buffer, "Par: %d", currentLevel->GetPar());
-        App::Print(10, 30, buffer);
+        App::Print(10, 50, buffer);
     }
 }
 

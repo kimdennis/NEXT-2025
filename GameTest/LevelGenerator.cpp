@@ -397,14 +397,38 @@ void LevelGenerator::ApplyCourseTemplate(Level* level, const CourseTemplate& tem
 }
 
 std::unique_ptr<Level> LevelGenerator::GenerateLevel(int levelNumber) {
-    auto level = std::make_unique<Level>(3 + (levelNumber / 3));
+    // Increase par based on level number (every 5 levels)
+    int basePar = 3;
+    int parIncrease = levelNumber / 5;
+    int par = basePar + parIncrease;
     
-    // Select template based on level number
+    auto level = std::make_unique<Level>(par);
+    
+    // Select template based on level number (cycling through templates)
     int templateIndex = levelNumber % m_courseTemplates.size();
-    ApplyCourseTemplate(level.get(), m_courseTemplates[templateIndex]);
-
-    // Add some random obstacles and collectibles for variety
-    // [Previous random object generation code remains the same]
     
+    // Get base template
+    CourseTemplate templ = m_courseTemplates[templateIndex];
+    
+    // Scale difficulty based on level number
+    float difficultyMultiplier = 1.0f + (levelNumber * 0.1f); // 10% harder each level
+    
+    // Add more enemies and obstacles based on level number
+    int extraEnemies = levelNumber / 3;  // Add an extra enemy every 3 levels
+    for (int i = 0; i < extraEnemies; i++) {
+        templ.enemies.push_back(std::make_pair(
+            GetRandomFloat(0.2f, 0.8f),
+            GetRandomFloat(0.2f, 0.8f)
+        ));
+    }
+    
+    // Increase enemy speed and patrol radius with level
+    for (auto& enemy : templ.enemies) {
+        // These will be applied when creating actual enemies in ApplyCourseTemplate
+        enemy.first *= difficultyMultiplier;
+        enemy.second *= difficultyMultiplier;
+    }
+    
+    ApplyCourseTemplate(level.get(), templ);
     return level;
 }
