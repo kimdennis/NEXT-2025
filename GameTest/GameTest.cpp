@@ -303,7 +303,7 @@ void ResetGame() {
 // ... Add RenderMenu, RenderHUD, RenderAimingLine, and RenderGameComplete functions ...
 
 void RenderMenu() {
-    App::Print(300, 300, "Mini Golf");
+    App::Print(300, 300, "Albatross");
     App::Print(300, 250, "Click to Start");
 }
 
