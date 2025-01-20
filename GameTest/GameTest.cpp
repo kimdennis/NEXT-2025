@@ -45,7 +45,6 @@ float dragStartY = 0.0f;
 // Screen boundaries
 const float SCREEN_WIDTH = 1024.0f;
 const float SCREEN_HEIGHT = 768.0f;
-const float BALL_RADIUS = 6.0f;
 
 // Game states
 enum GameState {
@@ -281,9 +280,24 @@ void ResetGame() {
     currentHoleIndex = 0;
     totalStrokes = 0;
     remainingStrokes = 3;  // Reset to starting strokes
+    
+    // Clear all levels and create new ones
+    levels.clear();
     CreateCourse();
     currentLevel = std::move(levels[0]);
+    
+    // Reset powerup system
+    powerupSystem = PowerupSystem();  // Create fresh powerup system
+    currentPowerupChoices.clear();
+    
+    // Reset game state
     gameState = MENU;
+    
+    // Reset ball powerups
+    if (currentLevel && currentLevel->GetBall()) {
+        currentLevel->GetBall()->ResetPowerups();
+        currentLevel->GetBall()->SetSpeedMultiplier(1.0f);
+    }
 }
 
 // ... Add RenderMenu, RenderHUD, RenderAimingLine, and RenderGameComplete functions ...

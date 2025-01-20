@@ -79,12 +79,13 @@ public:
     void SetProjectionLineEnabled(bool enabled) { m_projectionLineEnabled = enabled; }
     
     void ResetPowerups() {
-        m_speedMultiplier = 1.0f;
+        // Preserve speed multiplier
         m_sizeMultiplier = 1.0f;
         m_phaseMode = false;
         m_enemyImmune = false;
         m_radius = 10.0f;  // Reset to base radius
         m_projectionLineEnabled = true;  // Reset projection line
+        // m_speedMultiplier is intentionally not reset to persist across levels
     }
 
     // Add this with the other powerup-related methods

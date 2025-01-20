@@ -14,7 +14,7 @@ Ball::Ball(float x, float y) :
     m_accelerationY(0.0f),
     m_friction(0.075f),
     m_isMoving(false),
-    m_radius(6.0f),
+    m_radius(10.0f),
     m_mass(45.0f),
     m_accumulator(0.0f),
     m_speedMultiplier(1.0f),
