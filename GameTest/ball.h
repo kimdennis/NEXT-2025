@@ -31,6 +31,7 @@ private:
     float m_sizeMultiplier = 1.0f;
     bool m_phaseMode = false;
     bool m_enemyImmune = false;
+    bool m_projectionLineEnabled = true;
 
     static void DrawCircle(float x, float y, float radius, float r, float g, float b, float a);
 
@@ -75,6 +76,7 @@ public:
     }
     void SetPhaseMode(bool enabled) { m_phaseMode = enabled; }
     void SetEnemyImmune(bool enabled) { m_enemyImmune = enabled; }
+    void SetProjectionLineEnabled(bool enabled) { m_projectionLineEnabled = enabled; }
     
     void ResetPowerups() {
         m_speedMultiplier = 1.0f;
@@ -82,8 +84,10 @@ public:
         m_phaseMode = false;
         m_enemyImmune = false;
         m_radius = 10.0f;  // Reset to base radius
+        m_projectionLineEnabled = true;  // Reset projection line
     }
 
     // Add this with the other powerup-related methods
     bool IsPhaseMode() const { return m_phaseMode; }
+    bool IsProjectionLineEnabled() const { return m_projectionLineEnabled; }
 };

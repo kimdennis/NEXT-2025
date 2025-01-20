@@ -77,7 +77,7 @@ void RenderAimingLine();
 void RenderGameComplete();
 void ResetGame();
 void DrawProjectionLine(float startX, float startY, float angle, float power);
-void DrawArrow(float x, float y, float angle, float size);
+void DrawArrow(float x, float y, float angle, float size, float r, float g, float b);
 void RenderPowerupSelect();
 
 // Add as global variables
@@ -332,7 +332,7 @@ void RenderGameComplete() {
     App::Print(300, 200, "Click to Play Again");
 }
 
-void DrawArrow(float x, float y, float angle, float size) {
+void DrawArrow(float x, float y, float angle, float size, float r, float g, float b) {
     // Calculate arrow head points
     float arrowAngle = 150.0f * (M_PI / 180.0f); // 150 degrees for arrow head
     
@@ -344,14 +344,17 @@ void DrawArrow(float x, float y, float angle, float size) {
     float leftX = x + cos(angle - arrowAngle) * size;
     float leftY = y + sin(angle - arrowAngle) * size;
     
-    // Draw arrow head
-    App::DrawLine(x, y, rightX, rightY, 1.0f, 1.0f, 1.0f);
-    App::DrawLine(x, y, leftX, leftY, 1.0f, 1.0f, 1.0f);
+    // Draw arrow head with specified color
+    App::DrawLine(x, y, rightX, rightY, r, g, b);
+    App::DrawLine(x, y, leftX, leftY, r, g, b);
 }
 
 void DrawProjectionLine(float startX, float startY, float angle, float power) {
     if (!isDragging || !currentLevel) return;
-
+    
+    Ball* ball = currentLevel->GetBall();
+    if (!ball || !ball->IsProjectionLineEnabled()) return;
+    
     const int MAX_BOUNCES = 5;  
     const int STEPS_PER_BOUNCE = 15;  
     const float BOUNCE_DAMPENING = 0.8f;
@@ -377,33 +380,8 @@ void DrawProjectionLine(float startX, float startY, float angle, float power) {
     float lastValidAngle = angle;
     
     const auto& objects = currentLevel->GetObjects();
-    Ball* ball = currentLevel->GetBall();
     
-    if (ball && ball->IsPhaseMode()) {
-        // In ghost mode: Draw a straight line without bounces
-        float endX = startX + cos(angle) * power * 3.5f;
-        float endY = startY + sin(angle) * power * 3.5f;
-        
-        // Draw dotted line in ghost color
-        float distance = sqrt((endX - startX) * (endX - startX) + (endY - startY) * (endY - startY));
-        float dx = (endX - startX) / distance;
-        float dy = (endY - startY) / distance;
-        
-        for (float dist = 0; dist < distance; dist += DOT_SPACING) {
-            float dotX = startX + dx * dist;
-            float dotY = startY + dy * dist;
-            float dotEndX = dotX + cos(angle) * DOT_LENGTH;
-            float dotEndY = dotY + sin(angle) * DOT_LENGTH;
-            
-            App::DrawLine(dotX, dotY, dotEndX, dotEndY, 0.5f, 0.5f, 1.0f);  // Light blue for ghost mode
-        }
-        
-        // Draw arrow at the end
-        DrawArrow(endX, endY, angle, ARROW_SIZE);
-        return;
-    }
-    
-    // Normal mode: Show bounces (existing bounce calculation code)
+    // Draw the full line if in ghost mode, otherwise check for wall collisions
     for (int bounce = 0; bounce <= MAX_BOUNCES; bounce++) {
         for (int step = 0; step < STEPS_PER_BOUNCE; step++) {
             float prevX = currentX;
@@ -428,7 +406,12 @@ void DrawProjectionLine(float startX, float startY, float angle, float power) {
                 float dotEndX = dotX + cos(dotAngle) * DOT_LENGTH;
                 float dotEndY = dotY + sin(dotAngle) * DOT_LENGTH;
                 
-                App::DrawLine(dotX, dotY, dotEndX, dotEndY, 1.0f, 1.0f, 1.0f);
+                // Use different colors for ghost mode
+                if (ball->IsPhaseMode()) {
+                    App::DrawLine(dotX, dotY, dotEndX, dotEndY, 0.5f, 0.5f, 1.0f);  // Light blue for ghost mode
+                } else {
+                    App::DrawLine(dotX, dotY, dotEndX, dotEndY, 1.0f, 1.0f, 1.0f);  // White for normal mode
+                }
                 
                 lastDotX = dotX;
                 lastDotY = dotY;
@@ -460,87 +443,57 @@ void DrawProjectionLine(float startX, float startY, float angle, float power) {
                 collision = true;
             }
             
-            // Check collisions with all objects
-            for (const auto& obj : objects) {
-                // Check walls
-                if (const Wall* wall = dynamic_cast<const Wall*>(obj.get())) {
-                    float wallLeft = wall->GetPosition().x - wall->GetWidth()/2;
-                    float wallRight = wall->GetPosition().x + wall->GetWidth()/2;
-                    float wallTop = wall->GetPosition().y - wall->GetHeight()/2;
-                    float wallBottom = wall->GetPosition().y + wall->GetHeight()/2;
-                    
-                    // Check if current position (including ball radius) intersects with wall
-                    if (currentX + BALL_RADIUS > wallLeft && currentX - BALL_RADIUS < wallRight &&
-                        currentY + BALL_RADIUS > wallTop && currentY - BALL_RADIUS < wallBottom) {
+            // Only check wall collisions if NOT in ghost mode
+            if (!ball->IsPhaseMode()) {
+                for (const auto& obj : objects) {
+                    if (const Wall* wall = dynamic_cast<const Wall*>(obj.get())) {
+                        float wallLeft = wall->GetPosition().x - wall->GetWidth()/2;
+                        float wallRight = wall->GetPosition().x + wall->GetWidth()/2;
+                        float wallTop = wall->GetPosition().y - wall->GetHeight()/2;
+                        float wallBottom = wall->GetPosition().y + wall->GetHeight()/2;
                         
-                        float rightPen = (currentX + BALL_RADIUS) - wallLeft;
-                        float leftPen = wallRight - (currentX - BALL_RADIUS);
-                        float bottomPen = (currentY + BALL_RADIUS) - wallTop;
-                        float topPen = wallBottom - (currentY - BALL_RADIUS);
-                        
-                        float minPenX = (rightPen < leftPen) ? -rightPen : leftPen;
-                        float minPenY = (bottomPen < topPen) ? -bottomPen : topPen;
-                        
-                        if (abs(minPenX) < abs(minPenY)) {
-                            velocityX = -velocityX * BOUNCE_DAMPENING;
-                            currentX = prevX;
-                        } else {
-                            velocityY = -velocityY * BOUNCE_DAMPENING;
-                            currentY = prevY;
+                        if (currentX + BALL_RADIUS > wallLeft && currentX - BALL_RADIUS < wallRight &&
+                            currentY + BALL_RADIUS > wallTop && currentY - BALL_RADIUS < wallBottom) {
+                            
+                            float rightPen = (currentX + BALL_RADIUS) - wallLeft;
+                            float leftPen = wallRight - (currentX - BALL_RADIUS);
+                            float bottomPen = (currentY + BALL_RADIUS) - wallTop;
+                            float topPen = wallBottom - (currentY - BALL_RADIUS);
+                            
+                            float minPenX = (rightPen < leftPen) ? -rightPen : leftPen;
+                            float minPenY = (bottomPen < topPen) ? -bottomPen : topPen;
+                            
+                            if (abs(minPenX) < abs(minPenY)) {
+                                velocityX = -velocityX * BOUNCE_DAMPENING;
+                                currentX = prevX;
+                            } else {
+                                velocityY = -velocityY * BOUNCE_DAMPENING;
+                                currentY = prevY;
+                            }
+                            collision = true;
+                            break;
                         }
-                        collision = true;
-                        break;
                     }
                 }
-                // Check enemies
-                else if (const Enemy* enemy = dynamic_cast<const Enemy*>(obj.get())) {
-                    float enemyX, enemyY;
-                    enemy->GetPosition(enemyX, enemyY);
-                    
-                    float dx = currentX - enemyX;
-                    float dy = currentY - enemyY;
-                    float distanceSquared = dx * dx + dy * dy;
-                    float minDistance = BALL_RADIUS + enemy->GetSize();
-                    
-                    if (distanceSquared < minDistance * minDistance) {
-                        // Calculate deflection angle (8 possible directions)
-                        float angleToEnemy = atan2(dy, dx);
-                        float deflectionAngle = round(angleToEnemy / (M_PI / 4)) * (M_PI / 4);
-                        
-                        // Calculate new velocity based on deflection angle
-                        float currentSpeed = sqrt(velocityX * velocityX + velocityY * velocityY);
-                        float newSpeed = currentSpeed * ENEMY_FORCE_MULTIPLIER;
-                        
-                        velocityX = cos(deflectionAngle) * newSpeed;
-                        velocityY = sin(deflectionAngle) * newSpeed;
-                        
-                        // Move back to previous position to prevent sticking
-                        currentX = prevX;
-                        currentY = prevY;
-                        
-                        collision = true;
-                        break;
-                    }
-                }
-            }
-            
-            if (collision) {
-                // Store last valid position and angle before collision
-                lastValidX = prevX;
-                lastValidY = prevY;
-                lastValidAngle = atan2(velocityY, velocityX);
-                break;
             }
             
             // Update last valid position and angle
             lastValidX = currentX;
             lastValidY = currentY;
             lastValidAngle = atan2(velocityY, velocityX);
+            
+            if (collision && !ball->IsPhaseMode()) {
+                break;
+            }
         }
     }
     
-    // Draw final arrow
-    DrawArrow(lastValidX, lastValidY, lastValidAngle, ARROW_SIZE);
+    // Draw final arrow with appropriate color
+    if (ball->IsPhaseMode()) {
+        DrawArrow(lastValidX, lastValidY, lastValidAngle, ARROW_SIZE, 0.5f, 0.5f, 1.0f);  // Light blue for ghost mode
+    } else {
+        DrawArrow(lastValidX, lastValidY, lastValidAngle, ARROW_SIZE, 1.0f, 1.0f, 1.0f);  // White for normal mode
+    }
 }
 
 void RenderPowerupSelect() {
@@ -562,19 +515,36 @@ void RenderPowerupSelect() {
             );
         }
         
-        // Draw button border (white square)
-        App::DrawLine(buttonX, buttonY, buttonX + POWERUP_BUTTON_WIDTH, buttonY, 1.0f, 1.0f, 1.0f);  // Top
-        App::DrawLine(buttonX + POWERUP_BUTTON_WIDTH, buttonY, buttonX + POWERUP_BUTTON_WIDTH, buttonY + POWERUP_BUTTON_HEIGHT, 1.0f, 1.0f, 1.0f);  // Right
-        App::DrawLine(buttonX + POWERUP_BUTTON_WIDTH, buttonY + POWERUP_BUTTON_HEIGHT, buttonX, buttonY + POWERUP_BUTTON_HEIGHT, 1.0f, 1.0f, 1.0f);  // Bottom
-        App::DrawLine(buttonX, buttonY + POWERUP_BUTTON_HEIGHT, buttonX, buttonY, 1.0f, 1.0f, 1.0f);  // Left
+        // Draw button border
+        App::DrawLine(buttonX, buttonY, buttonX + POWERUP_BUTTON_WIDTH, buttonY, 1.0f, 1.0f, 1.0f);
+        App::DrawLine(buttonX + POWERUP_BUTTON_WIDTH, buttonY, buttonX + POWERUP_BUTTON_WIDTH, buttonY + POWERUP_BUTTON_HEIGHT, 1.0f, 1.0f, 1.0f);
+        App::DrawLine(buttonX + POWERUP_BUTTON_WIDTH, buttonY + POWERUP_BUTTON_HEIGHT, buttonX, buttonY + POWERUP_BUTTON_HEIGHT, 1.0f, 1.0f, 1.0f);
+        App::DrawLine(buttonX, buttonY + POWERUP_BUTTON_HEIGHT, buttonX, buttonY, 1.0f, 1.0f, 1.0f);
         
-        // Draw powerup info
-        App::Print(buttonX + 10, buttonY + POWERUP_BUTTON_HEIGHT - 30, 
-                  powerup.name.c_str(), 1.0f, 1.0f, 0.0f);
+        const float MARGIN = 10.0f;
+        const float LINE_HEIGHT = 20.0f;
         
-        App::Print(buttonX + 10, buttonY + POWERUP_BUTTON_HEIGHT - 60, 
-                  powerup.description.c_str());
+        // Draw powerup name at top (in yellow)
+        App::Print(buttonX + MARGIN, buttonY + POWERUP_BUTTON_HEIGHT - LINE_HEIGHT, powerup.name.c_str(), 1.0f, 1.0f, 0.0f);
         
+        // Draw description in middle (with word wrap)
+        std::string desc = powerup.description;
+        size_t maxCharsPerLine = (POWERUP_BUTTON_WIDTH - 2 * MARGIN) / 8; // Approximate characters that fit
+        
+        // Split description into lines if too long
+        if (desc.length() > maxCharsPerLine) {
+            size_t lastSpace = desc.rfind(' ', maxCharsPerLine);
+            if (lastSpace != std::string::npos) {
+                std::string line1 = desc.substr(0, lastSpace);
+                std::string line2 = desc.substr(lastSpace + 1);
+                App::Print(buttonX + MARGIN, buttonY + POWERUP_BUTTON_HEIGHT/2, line1.c_str());
+                App::Print(buttonX + MARGIN, buttonY + POWERUP_BUTTON_HEIGHT/2 - LINE_HEIGHT, line2.c_str());
+            }
+        } else {
+            App::Print(buttonX + MARGIN, buttonY + POWERUP_BUTTON_HEIGHT/2, desc.c_str());
+        }
+        
+        // Draw cost text at bottom
         char costText[32];
         if (powerup.shotCost > 0) {
             sprintf_s(costText, "Cost: %d shots", powerup.shotCost);
@@ -583,7 +553,7 @@ void RenderPowerupSelect() {
         } else {
             sprintf_s(costText, "Free!");
         }
-        App::Print(buttonX + 10, buttonY + POWERUP_BUTTON_HEIGHT - 90, costText);
+        App::Print(buttonX + MARGIN, buttonY + MARGIN, costText);
     }
     
     // Draw current shots

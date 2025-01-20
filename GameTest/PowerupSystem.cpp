@@ -20,7 +20,7 @@ void PowerupSystem::InitializePowerupPool() {
         ),
         Powerup(
             "Slow & Steady",
-            "Decrease ball speed by 20%",
+            "Decrease speed by 20%",
             -2,  // Gain 2 shots
             [](Ball* ball) {
                 ball->SetSpeedMultiplier(0.8f);
@@ -29,14 +29,14 @@ void PowerupSystem::InitializePowerupPool() {
         Powerup(
             "Golf Corpse",
             "Pass through walls for this level",
-            1,  // Costs 1 shot
+            2,  // Costs 2 shot
             [](Ball* ball) {
                 ball->SetPhaseMode(true);
             }
         ),
         Powerup(
             "Oblivious",
-            "Enemies no longer affect you",
+            "Ignore Enemies for this level",
             1,  // Costs 1 shot
             [](Ball* ball) {
                 ball->SetEnemyImmune(true);
@@ -44,10 +44,18 @@ void PowerupSystem::InitializePowerupPool() {
         ),
         Powerup(
             "Big Baller",
-            "Increase ball size by 50%",
+            "Grow in size by 50% for this level",
             -2,  // Gain 2 shots
             [](Ball* ball) {
-                ball->SetSizeMultiplier(1.5f);
+                ball->SetSizeMultiplier(1.50f);
+            }
+        ),
+        Powerup(
+            "Blind Shot",
+            "Disables projection line for this level",
+            -2,  // Gain 2 shots
+            [](Ball* ball) {
+                ball->SetProjectionLineEnabled(false);
             }
         )
     };
