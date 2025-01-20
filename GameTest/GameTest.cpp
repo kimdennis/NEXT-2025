@@ -12,6 +12,7 @@
 #include "Enemy.h"
 #include "Collectible.h"
 #include "LevelGenerator.h"
+#include "PowerupSystem.h"
 
 // Add at the top of the file with other includes
 #define _USE_MATH_DEFINES
@@ -50,6 +51,7 @@ const float BALL_RADIUS = 6.0f;
 enum GameState {
     MENU,
     PLAYING,
+    POWERUP_SELECT,
     COMPLETE
 };
 GameState gameState = MENU;
@@ -76,6 +78,15 @@ void RenderGameComplete();
 void ResetGame();
 void DrawProjectionLine(float startX, float startY, float angle, float power);
 void DrawArrow(float x, float y, float angle, float size);
+void RenderPowerupSelect();
+
+// Add as global variables
+PowerupSystem powerupSystem;
+std::vector<Powerup> currentPowerupChoices;
+
+// Constants for powerup selection UI
+const float POWERUP_BUTTON_WIDTH = 200.0f;
+const float POWERUP_BUTTON_HEIGHT = 150.0f;
 
 void CreateCourse() {
     LevelGenerator generator;
@@ -95,23 +106,8 @@ void Init() {
     auto& eventManager = GameEventManager::GetInstance();
     eventManager.Subscribe(GameEventManager::EventType::HoleIn, 
         [](const GameEventManager::EventType&, void*) {
-            LevelGenerator generator;
-            
-            // Generate a new level when player completes current one
-            levels.push_back(generator.GenerateLevel(currentHoleIndex + 1));
-            
-            // Move to next level
-            currentHoleIndex++;
-            currentLevel = std::move(levels[currentHoleIndex]);
-            
-            // Add strokes for completing the level
-            remainingStrokes += STROKES_PER_LEVEL;
-            
-            // Optional: Remove old levels to prevent memory buildup
-            if (currentHoleIndex > 2) {  // Keep last 3 levels
-                levels.erase(levels.begin());
-                currentHoleIndex--;
-            }
+            currentPowerupChoices = powerupSystem.GetRandomPowerups(3);
+            gameState = POWERUP_SELECT;
         });
 
     eventManager.Subscribe(GameEventManager::EventType::CollectibleCollected, 
@@ -148,8 +144,12 @@ void Update(float deltaTime) {
                 remainingStrokes--;
                 totalStrokes++;
                 
-                // Check for game over when ball stops and no strokes remain
-                if (remainingStrokes <= 0) {
+                // Get ball position
+                float ballX, ballY;
+                ball->GetPosition(ballX, ballY);
+                
+                // Only check for game over if we're out of strokes AND not in the hole
+                if (remainingStrokes <= 0 && !currentLevel->GetHole()->IsInHole(ballX, ballY)) {
                     gameState = COMPLETE;
                     return;
                 }
@@ -183,6 +183,44 @@ void Update(float deltaTime) {
             }
         } break;
             
+        case POWERUP_SELECT: {
+            if (App::IsKeyPressed(VK_LBUTTON)) {
+                float mouseX, mouseY;
+                App::GetMousePos(mouseX, mouseY);
+                
+                // Calculate button positions and check clicks
+                for (int i = 0; i < currentPowerupChoices.size(); i++) {
+                    float buttonX = (SCREEN_WIDTH / 4) * (i + 1) - POWERUP_BUTTON_WIDTH/2;
+                    float buttonY = SCREEN_HEIGHT/2 - POWERUP_BUTTON_HEIGHT/2;
+                    
+                    // Check if mouse is within button bounds
+                    if (mouseX >= buttonX && mouseX <= buttonX + POWERUP_BUTTON_WIDTH &&
+                        mouseY >= buttonY && mouseY <= buttonY + POWERUP_BUTTON_HEIGHT) {
+                        
+                        const Powerup& selected = currentPowerupChoices[i];
+                        
+                        // First add the 3 free shots for completing the level
+                        remainingStrokes += STROKES_PER_LEVEL;
+                        
+                        // Then apply the powerup cost
+                        remainingStrokes -= selected.shotCost;
+                        
+                        // Generate and move to next level
+                        LevelGenerator generator;
+                        levels.push_back(generator.GenerateLevel(currentHoleIndex + 1));
+                        currentHoleIndex++;
+                        currentLevel = std::move(levels[currentHoleIndex]);
+                        
+                        // Apply the powerup to the new level's ball
+                        powerupSystem.ApplyPowerup(selected, currentLevel->GetBall());
+                        
+                        gameState = PLAYING;
+                        break;
+                    }
+                }
+            }
+        } break;
+            
         case COMPLETE:
             if (App::IsKeyPressed(VK_LBUTTON)) {
                 ResetGame();
@@ -211,6 +249,10 @@ void Render() {
                     DrawProjectionLine(ballX, ballY, aimAngle, power);
                 }
             }
+            break;
+            
+        case POWERUP_SELECT:
+            RenderPowerupSelect();
             break;
             
         case COMPLETE:
@@ -474,4 +516,53 @@ void DrawProjectionLine(float startX, float startY, float angle, float power) {
     
     // Draw arrow at the end of the last valid position
     DrawArrow(lastValidX, lastValidY, lastValidAngle, ARROW_SIZE);
+}
+
+void RenderPowerupSelect() {
+    // Draw title
+    App::Print(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT - 100, "Choose Your Powerup!");
+    
+    // Draw each powerup option
+    for (int i = 0; i < currentPowerupChoices.size(); i++) {
+        const Powerup& powerup = currentPowerupChoices[i];
+        float buttonX = (SCREEN_WIDTH / 4) * (i + 1) - POWERUP_BUTTON_WIDTH/2;
+        float buttonY = SCREEN_HEIGHT/2 - POWERUP_BUTTON_HEIGHT/2;
+        
+        // Draw button background (filled rectangle)
+        for (int x = 0; x < POWERUP_BUTTON_WIDTH; x += 2) {
+            App::DrawLine(
+                buttonX + x, buttonY,
+                buttonX + x, buttonY + POWERUP_BUTTON_HEIGHT,
+                0.2f, 0.2f, 0.2f
+            );
+        }
+        
+        // Draw button border (white square)
+        App::DrawLine(buttonX, buttonY, buttonX + POWERUP_BUTTON_WIDTH, buttonY, 1.0f, 1.0f, 1.0f);  // Top
+        App::DrawLine(buttonX + POWERUP_BUTTON_WIDTH, buttonY, buttonX + POWERUP_BUTTON_WIDTH, buttonY + POWERUP_BUTTON_HEIGHT, 1.0f, 1.0f, 1.0f);  // Right
+        App::DrawLine(buttonX + POWERUP_BUTTON_WIDTH, buttonY + POWERUP_BUTTON_HEIGHT, buttonX, buttonY + POWERUP_BUTTON_HEIGHT, 1.0f, 1.0f, 1.0f);  // Bottom
+        App::DrawLine(buttonX, buttonY + POWERUP_BUTTON_HEIGHT, buttonX, buttonY, 1.0f, 1.0f, 1.0f);  // Left
+        
+        // Draw powerup info
+        App::Print(buttonX + 10, buttonY + POWERUP_BUTTON_HEIGHT - 30, 
+                  powerup.name.c_str(), 1.0f, 1.0f, 0.0f);
+        
+        App::Print(buttonX + 10, buttonY + POWERUP_BUTTON_HEIGHT - 60, 
+                  powerup.description.c_str());
+        
+        char costText[32];
+        if (powerup.shotCost > 0) {
+            sprintf_s(costText, "Cost: %d shots", powerup.shotCost);
+        } else if (powerup.shotCost < 0) {
+            sprintf_s(costText, "Gain: %d shots", -powerup.shotCost);
+        } else {
+            sprintf_s(costText, "Free!");
+        }
+        App::Print(buttonX + 10, buttonY + POWERUP_BUTTON_HEIGHT - 90, costText);
+    }
+    
+    // Draw current shots
+    char shotsText[32];
+    sprintf_s(shotsText, "Current Shots: %d", remainingStrokes);
+    App::Print(10, SCREEN_HEIGHT - 30, shotsText);
 }

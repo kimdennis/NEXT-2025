@@ -33,6 +33,7 @@
     <ClCompile Include="Level.cpp" />
     <ClCompile Include="LevelGenerator.cpp" />
     <ClCompile Include="Wall.cpp" />
+    <ClCompile Include="PowerupSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
@@ -74,6 +75,7 @@
     <ClInclude Include="LevelGenerator.h" />
     <ClInclude Include="Wall.h" />
     <ClInclude Include="PathNode.h" />
+    <ClInclude Include="PowerupSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="API">

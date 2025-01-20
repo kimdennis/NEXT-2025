@@ -25,6 +25,10 @@ private:
     float m_radius;
     bool m_isMoving;
     float m_accumulator;
+    float m_speedMultiplier = 1.0f;
+    float m_sizeMultiplier = 1.0f;
+    bool m_phaseMode = false;
+    bool m_enemyImmune = false;
 
     static void DrawCircle(float x, float y, float radius, float r, float g, float b, float a);
 
@@ -60,4 +64,10 @@ public:
     // Add these declarations
     void GetPosition(float& x, float& y) const override;
     void SetPosition(float x, float y) override;
+    
+    void SetSpeedMultiplier(float multiplier) { m_speedMultiplier = multiplier; }
+    void SetSizeMultiplier(float multiplier) { m_sizeMultiplier = multiplier; }
+    void SetPhaseMode(bool enabled) { m_phaseMode = enabled; }
+    void SetEnemyImmune(bool enabled) { m_enemyImmune = enabled; }
+    void ResetPowerups();
 };
