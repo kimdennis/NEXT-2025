@@ -11,7 +11,7 @@ PowerupSystem::PowerupSystem() {
 void PowerupSystem::InitializePowerupPool() {
     m_powerupPool = std::vector<Powerup>{
         Powerup(
-            "Speed Boost",
+            "Speed Demon",
             "Increase ball speed by 30%",
             0,  // Free
             [](Ball* ball) {
@@ -19,7 +19,7 @@ void PowerupSystem::InitializePowerupPool() {
             }
         ),
         Powerup(
-            "Speed Reduction",
+            "Slow & Steady",
             "Decrease ball speed by 20%",
             -2,  // Gain 2 shots
             [](Ball* ball) {
@@ -27,7 +27,7 @@ void PowerupSystem::InitializePowerupPool() {
             }
         ),
         Powerup(
-            "Ghost Ball",
+            "Golf Corpse",
             "Pass through walls for this level",
             1,  // Costs 1 shot
             [](Ball* ball) {
@@ -35,7 +35,7 @@ void PowerupSystem::InitializePowerupPool() {
             }
         ),
         Powerup(
-            "Heavy Ball",
+            "Oblivious",
             "Enemies no longer affect you",
             1,  // Costs 1 shot
             [](Ball* ball) {
@@ -43,7 +43,7 @@ void PowerupSystem::InitializePowerupPool() {
             }
         ),
         Powerup(
-            "Big Ball",
+            "Big Baller",
             "Increase ball size by 50%",
             -2,  // Gain 2 shots
             [](Ball* ball) {
