@@ -362,22 +362,48 @@ void DrawProjectionLine(float startX, float startY, float angle, float power) {
     const float ARROW_SIZE = 15.0f;  
     
     float normalizedPower = power / MAX_POWER;
-    float velocityX = cos(angle) * normalizedPower * MAX_POWER * 3.5f;  // Added 1.5x multiplier
-    float velocityY = sin(angle) * normalizedPower * MAX_POWER * 3.5f;  // Added 1.5x multiplier
+    float velocityX = cos(angle) * normalizedPower * MAX_POWER * 3.5f;
+    float velocityY = sin(angle) * normalizedPower * MAX_POWER * 3.5f;
     
     float currentX = startX;
     float currentY = startY;
     float timeStep = 0.016f;
     
-    float accumulatedDistance = 0.0f;  // Track distance for dot spacing
-    float lastDotX = startX;  // Position of last drawn dot
+    float accumulatedDistance = 0.0f;
+    float lastDotX = startX;
     float lastDotY = startY;
-    float lastValidX = startX;  // Last valid position for arrow
+    float lastValidX = startX;
     float lastValidY = startY;
-    float lastValidAngle = angle;  // Last valid angle for arrow
+    float lastValidAngle = angle;
     
     const auto& objects = currentLevel->GetObjects();
+    Ball* ball = currentLevel->GetBall();
     
+    if (ball && ball->IsPhaseMode()) {
+        // In ghost mode: Draw a straight line without bounces
+        float endX = startX + cos(angle) * power * 3.5f;
+        float endY = startY + sin(angle) * power * 3.5f;
+        
+        // Draw dotted line in ghost color
+        float distance = sqrt((endX - startX) * (endX - startX) + (endY - startY) * (endY - startY));
+        float dx = (endX - startX) / distance;
+        float dy = (endY - startY) / distance;
+        
+        for (float dist = 0; dist < distance; dist += DOT_SPACING) {
+            float dotX = startX + dx * dist;
+            float dotY = startY + dy * dist;
+            float dotEndX = dotX + cos(angle) * DOT_LENGTH;
+            float dotEndY = dotY + sin(angle) * DOT_LENGTH;
+            
+            App::DrawLine(dotX, dotY, dotEndX, dotEndY, 0.5f, 0.5f, 1.0f);  // Light blue for ghost mode
+        }
+        
+        // Draw arrow at the end
+        DrawArrow(endX, endY, angle, ARROW_SIZE);
+        return;
+    }
+    
+    // Normal mode: Show bounces (existing bounce calculation code)
     for (int bounce = 0; bounce <= MAX_BOUNCES; bounce++) {
         for (int step = 0; step < STEPS_PER_BOUNCE; step++) {
             float prevX = currentX;
@@ -398,7 +424,6 @@ void DrawProjectionLine(float startX, float startY, float angle, float power) {
                 float dotX = prevX + dx * t;
                 float dotY = prevY + dy * t;
                 
-                // Draw a small line segment for the dot
                 float dotAngle = atan2(dy, dx);
                 float dotEndX = dotX + cos(dotAngle) * DOT_LENGTH;
                 float dotEndY = dotY + sin(dotAngle) * DOT_LENGTH;
@@ -514,7 +539,7 @@ void DrawProjectionLine(float startX, float startY, float angle, float power) {
         }
     }
     
-    // Draw arrow at the end of the last valid position
+    // Draw final arrow
     DrawArrow(lastValidX, lastValidY, lastValidAngle, ARROW_SIZE);
 }
 
@@ -565,4 +590,57 @@ void RenderPowerupSelect() {
     char shotsText[32];
     sprintf_s(shotsText, "Current Shots: %d", remainingStrokes);
     App::Print(10, SCREEN_HEIGHT - 30, shotsText);
+}
+
+void DrawProjectionLine(Ball* ball, float startX, float startY, float endX, float endY) {
+    if (!ball) return;
+    
+    float dx = endX - startX;
+    float dy = endY - startY;
+    float distance = sqrt(dx * dx + dy * dy);
+    
+    if (distance < 0.1f) return;
+    
+    float normalizedX = dx / distance;
+    float normalizedY = dy / distance;
+    
+    const int NUM_POINTS = 20;
+    float lastX = startX;
+    float lastY = startY;
+    bool stopped = false;
+    
+    // Draw the full line if in ghost mode, otherwise check for wall collisions
+    for (int i = 1; i <= NUM_POINTS && !stopped; i++) {
+        float t = (float)i / NUM_POINTS;
+        float currentX = startX + normalizedX * distance * t;
+        float currentY = startY + normalizedY * distance * t;
+        
+        // Only check wall collisions if NOT in ghost mode
+        if (!ball->IsPhaseMode()) {
+            for (const auto& obj : currentLevel->GetObjects()) {
+                if (const Wall* wall = dynamic_cast<const Wall*>(obj.get())) {
+                    float wallLeft = wall->GetPosition().x - wall->GetWidth()/2;
+                    float wallRight = wall->GetPosition().x + wall->GetWidth()/2;
+                    float wallTop = wall->GetPosition().y - wall->GetHeight()/2;
+                    float wallBottom = wall->GetPosition().y + wall->GetHeight()/2;
+                    
+                    if (currentX >= wallLeft && currentX <= wallRight &&
+                        currentY >= wallTop && currentY <= wallBottom) {
+                        stopped = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Draw line segment with different color for ghost mode
+        if (ball->IsPhaseMode()) {
+            App::DrawLine(lastX, lastY, currentX, currentY, 0.5f, 0.5f, 1.0f);  // Light blue for ghost mode
+        } else {
+            App::DrawLine(lastX, lastY, currentX, currentY, 1.0f, 1.0f, 1.0f);  // White for normal mode
+        }
+        
+        lastX = currentX;
+        lastY = currentY;
+    }
 }

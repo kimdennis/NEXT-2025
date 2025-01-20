@@ -52,6 +52,7 @@ void Level::Reset() {
         m_hole->GetStartPosition(startX, startY);
         m_ball->SetPosition(startX, startY);
         m_ball->Stop();
+        m_ball->ResetPowerups();  // Reset powerups when resetting level
     }
 }
 

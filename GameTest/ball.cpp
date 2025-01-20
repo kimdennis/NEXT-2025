@@ -16,7 +16,11 @@ Ball::Ball(float x, float y) :
     m_isMoving(false),
     m_radius(6.0f),
     m_mass(45.0f),
-    m_accumulator(0.0f)
+    m_accumulator(0.0f),
+    m_speedMultiplier(1.0f),
+    m_sizeMultiplier(1.0f),
+    m_phaseMode(false),
+    m_enemyImmune(false)
 {
     m_width = m_radius * 2;
     m_height = m_radius * 2;
@@ -74,8 +78,18 @@ void Ball::Update(float deltaTime) {
 }
 
 void Ball::Draw() {
-    // Draw the ball
+    // Draw the ball with size based on sizeMultiplier
     DrawCircle(m_posX, m_posY, m_radius, 1.0f, 1.0f, 1.0f, 1.0f);
+    
+    // Optional: Visual indicator for active powerups
+    if (m_phaseMode) {
+        // Draw ghost effect
+        DrawCircle(m_posX, m_posY, m_radius + 2, 0.5f, 0.5f, 1.0f, 0.5f);
+    }
+    if (m_enemyImmune) {
+        // Draw shield effect
+        DrawCircle(m_posX, m_posY, m_radius + 4, 1.0f, 0.5f, 0.0f, 0.5f);
+    }
     
     // Display velocity information
     char velocityText[64];
@@ -92,48 +106,40 @@ void Ball::Draw() {
 }
 
 bool Ball::CheckCollision(const GameObject& other) {
-    // Check for wall collision
+    // Handle wall collisions
     if (const Wall* wall = dynamic_cast<const Wall*>(&other)) {
-        HandleWallCollision(*wall);
+        // Skip wall collisions if in phase mode
+        if (!m_phaseMode) {
+            HandleWallCollision(*wall);
+        }
         return true;
     }
     
-    // Check for enemy collision
-    if (Enemy* enemy = const_cast<Enemy*>(dynamic_cast<const Enemy*>(&other))) {  // Note: const_cast to allow Kill()
-        if (enemy->IsAlive() && !enemy->IsExploding()) {
+    // Handle enemy collisions
+    if (const Enemy* enemy = dynamic_cast<const Enemy*>(&other)) {
+        // Skip enemy collisions if immune
+        if (!m_enemyImmune) {
             float enemyX, enemyY;
             enemy->GetPosition(enemyX, enemyY);
             
             float dx = m_posX - enemyX;
             float dy = m_posY - enemyY;
             float distanceSquared = dx * dx + dy * dy;
-            float minDistance = m_radius + enemy->GetSize();
+            float minDistance = m_radius + 10.0f; // Assuming enemy radius is 10
             
             if (distanceSquared < minDistance * minDistance) {
-                // Kill the enemy
-                enemy->Kill();
-                
-                // Normalize direction vector
-                float distance = sqrt(distanceSquared);
-                float nx = dx / distance;
-                float ny = dy / distance;
-                
-                // Set new velocity in the direction away from enemy
-                const float BOUNCE_SPEED = 15.0f;
-                m_velocityX = nx * BOUNCE_SPEED;
-                m_velocityY = ny * BOUNCE_SPEED;
-                
-                // Move ball out of collision
-                m_posX = enemyX + nx * minDistance;
-                m_posY = enemyY + ny * minDistance;
-                
+                // Bounce away from enemy
+                float angle = atan2(dy, dx);
+                float bounceSpeed = 0.5f;  // Adjust as needed
+                m_velocityX = cos(angle) * bounceSpeed;
+                m_velocityY = sin(angle) * bounceSpeed;
                 m_isMoving = true;
                 return true;
             }
         }
     }
     
-    // Add collectible collision check
+    // Handle collectible collisions
     if (Collectible* collectible = const_cast<Collectible*>(dynamic_cast<const Collectible*>(&other))) {
         if (!collectible->IsCollected()) {
             float collectibleX, collectibleY;
@@ -142,7 +148,7 @@ bool Ball::CheckCollision(const GameObject& other) {
             float dx = m_posX - collectibleX;
             float dy = m_posY - collectibleY;
             float distanceSquared = dx * dx + dy * dy;
-            float minDistance = m_radius + 8.0f; // 8.0f is the collectible's radius
+            float minDistance = m_radius + 8.0f; // Collectible radius
             
             if (distanceSquared < minDistance * minDistance) {
                 collectible->Collect();
@@ -158,8 +164,8 @@ void Ball::ApplyForce(float power, float angle) {
     const float MAX_DRAG_LENGTH = 100.0f;
     const float POWER_SCALE = 2.0f;
     
-    // Normalize the power based on drag length
-    float normalizedPower = (power / MAX_DRAG_LENGTH) * POWER_SCALE;
+    // Normalize the power based on drag length and apply speed multiplier
+    float normalizedPower = (power / MAX_DRAG_LENGTH) * POWER_SCALE * m_speedMultiplier;
     
     // Apply velocity directly based on angle and power
     m_velocityX = normalizedPower * cos(angle);

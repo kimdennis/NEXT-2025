@@ -25,6 +25,8 @@ private:
     float m_radius;
     bool m_isMoving;
     float m_accumulator;
+
+    // Add powerup state variables
     float m_speedMultiplier = 1.0f;
     float m_sizeMultiplier = 1.0f;
     bool m_phaseMode = false;
@@ -65,9 +67,23 @@ public:
     void GetPosition(float& x, float& y) const override;
     void SetPosition(float x, float y) override;
     
+    // Add powerup methods (inline implementation)
     void SetSpeedMultiplier(float multiplier) { m_speedMultiplier = multiplier; }
-    void SetSizeMultiplier(float multiplier) { m_sizeMultiplier = multiplier; }
+    void SetSizeMultiplier(float multiplier) { 
+        m_sizeMultiplier = multiplier; 
+        m_radius = 10.0f * multiplier;  // Adjust base radius of 10
+    }
     void SetPhaseMode(bool enabled) { m_phaseMode = enabled; }
     void SetEnemyImmune(bool enabled) { m_enemyImmune = enabled; }
-    void ResetPowerups();
+    
+    void ResetPowerups() {
+        m_speedMultiplier = 1.0f;
+        m_sizeMultiplier = 1.0f;
+        m_phaseMode = false;
+        m_enemyImmune = false;
+        m_radius = 10.0f;  // Reset to base radius
+    }
+
+    // Add this with the other powerup-related methods
+    bool IsPhaseMode() const { return m_phaseMode; }
 };
