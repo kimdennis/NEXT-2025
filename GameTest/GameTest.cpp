@@ -113,6 +113,11 @@ void Init() {
                 currentHoleIndex--;
             }
         });
+
+    eventManager.Subscribe(GameEventManager::EventType::CollectibleCollected, 
+        [](const GameEventManager::EventType&, void*) {
+            remainingStrokes++; // Add one stroke when collecting
+        });
 }
 
 void Update(float deltaTime) {

@@ -12,7 +12,8 @@ public:
         StrokeAdded,
         LevelComplete,
         GameComplete,
-        InvalidHolePlacement
+        InvalidHolePlacement,
+        CollectibleCollected
     };
 
     using EventCallback = std::function<void(const EventType&, void*)>;

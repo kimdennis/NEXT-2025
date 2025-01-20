@@ -1,6 +1,7 @@
 #pragma once
 #include "GameObject.h"
 #include "App/app.h"
+#include "GameEventManager.h"
 
 class Collectible : public GameObject {
 private:
@@ -29,5 +30,8 @@ public:
     bool CheckCollision(const GameObject& other) override { return false; }
     
     bool IsCollected() const { return m_isCollected; }
-    void Collect() { m_isCollected = true; }
+    void Collect() { 
+        m_isCollected = true; 
+        GameEventManager::GetInstance().Emit(GameEventManager::EventType::CollectibleCollected);
+    }
 };
