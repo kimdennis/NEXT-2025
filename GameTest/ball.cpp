@@ -97,12 +97,12 @@ void Ball::Draw() {
     sprintf_s(velocityText, "Velocity: %.1f", totalVelocity);
     
     // Position the text above the ball
-    App::Print(static_cast<int>(m_posX - 30), static_cast<int>(m_posY - m_radius - 20), velocityText);
+    //App::Print(static_cast<int>(m_posX - 30), static_cast<int>(m_posY - m_radius - 20), velocityText);
     
     // Optionally show X and Y components
     char componentText[64];
     sprintf_s(componentText, "X: %.1f Y: %.1f", m_velocityX, m_velocityY);
-    App::Print(static_cast<int>(m_posX - 30), static_cast<int>(m_posY - m_radius - 35), componentText);
+    //App::Print(static_cast<int>(m_posX - 30), static_cast<int>(m_posY - m_radius - 35), componentText);
 }
 
 bool Ball::CheckCollision(const GameObject& other) {
